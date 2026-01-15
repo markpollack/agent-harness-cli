@@ -32,7 +32,7 @@
         <!-- Agent Harness -->
         <dependency>
             <groupId>org.springaicommunity.agents</groupId>
-            <artifactId>harness-core</artifactId>
+            <artifactId>harness-api</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springaicommunity.agents</groupId>

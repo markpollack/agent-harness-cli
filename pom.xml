@@ -107,7 +107,7 @@
             <!-- Agent Harness modules -->
             <dependency>
                 <groupId>org.springaicommunity.agents</groupId>
-                <artifactId>harness-core</artifactId>
+                <artifactId>harness-api</artifactId>
                 <version>${agent-harness.version}</version>
             </dependency>
             <dependency>
