@@ -16,7 +16,7 @@
 package org.springaicommunity.agents.cli;
 
 import com.williamcallahan.tui4j.compat.bubbletea.Program;
-import org.springaicommunity.agents.cli.core.HelloModel;
+import org.springaicommunity.agents.cli.core.ChatModel;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -75,7 +75,7 @@ public class AgentCli implements Callable<Integer> {
         }
 
         // TUI mode (default)
-        Program program = new Program(new HelloModel());
+        Program program = new Program(new ChatModel());
         program.run();
         return 0;
     }

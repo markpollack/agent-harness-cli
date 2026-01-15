@@ -1,0 +1,35 @@
+#!/usr/bin/expect -f
+# Test: Text input and echo functionality
+# Requires: --linear mode (Phase 4)
+#
+# Tests that user input is displayed and echoed back
+
+set timeout 30
+
+# Start CLI in linear mode
+spawn ./agent-harness-cli --linear
+
+# Wait for prompt
+expect ">"
+
+# Send a message
+send "Hello world\n"
+
+# Expect the echo response
+expect -re ".*You said: Hello world.*"
+
+# Wait for next prompt
+expect ">"
+
+# Send another message
+send "Testing input\n"
+
+# Expect the echo response
+expect -re ".*You said: Testing input.*"
+
+# Quit
+expect ">"
+send "q\n"
+
+expect eof
+puts "PASS: text-input-echo"
