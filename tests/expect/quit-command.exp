@@ -1,0 +1,25 @@
+#!/usr/bin/expect -f
+# Test: Quit command in linear mode
+# Requires: --linear mode, ANTHROPIC_API_KEY set
+#
+# Tests that 'q' and '/quit' both exit the CLI
+
+set timeout 30
+
+# Test 'q' quit
+spawn java -jar cli-app/target/cli-app-0.1.0-SNAPSHOT.jar --linear
+expect ">"
+send "q\r"
+expect "Goodbye!"
+expect eof
+puts "PASS: q quits"
+
+# Test '/quit' quit
+spawn java -jar cli-app/target/cli-app-0.1.0-SNAPSHOT.jar --linear
+expect ">"
+send "/quit\r"
+expect "Goodbye!"
+expect eof
+puts "PASS: /quit quits"
+
+puts "\nPASS: quit-command"

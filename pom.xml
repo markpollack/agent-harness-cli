@@ -120,6 +120,11 @@
                 <artifactId>harness-tools</artifactId>
                 <version>${agent-harness.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.springaicommunity.agents</groupId>
+                <artifactId>harness-agents</artifactId>
+                <version>${agent-harness.version}</version>
+            </dependency>
 
             <!-- CLI modules -->
             <dependency>

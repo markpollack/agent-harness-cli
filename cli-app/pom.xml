@@ -32,15 +32,7 @@
         <!-- Agent Harness -->
         <dependency>
             <groupId>org.springaicommunity.agents</groupId>
-            <artifactId>harness-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springaicommunity.agents</groupId>
-            <artifactId>harness-patterns</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springaicommunity.agents</groupId>
-            <artifactId>harness-tools</artifactId>
+            <artifactId>harness-agents</artifactId>
         </dependency>
 
         <!-- Spring AI - Anthropic -->

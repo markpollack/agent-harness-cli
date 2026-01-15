@@ -1,0 +1,33 @@
+#!/usr/bin/expect -f
+# Test: Basic interaction in linear mode
+# Requires: --linear mode, ANTHROPIC_API_KEY set
+#
+# Tests basic prompt/response flow with the agent
+
+set timeout 120
+
+# Start CLI in linear mode
+spawn java -jar cli-app/target/cli-app-0.1.0-SNAPSHOT.jar --linear
+
+# Wait for banner and prompt
+expect -re "Agent Harness CLI.*linear mode"
+expect ">"
+
+# Send a simple message
+send "Say hello in exactly 3 words\r"
+
+# Wait for thinking indicator
+expect -re "\\\[Thinking...\\\]"
+
+# Wait for response (any text followed by prompt)
+expect -re ".*\n"
+expect ">"
+
+# Quit
+send "q\r"
+
+# Wait for goodbye
+expect "Goodbye!"
+expect eof
+
+puts "\nPASS: basic-interaction"

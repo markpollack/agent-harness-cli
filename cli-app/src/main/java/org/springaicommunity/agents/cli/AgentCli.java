@@ -17,17 +17,33 @@ package org.springaicommunity.agents.cli;
 
 import com.williamcallahan.tui4j.compat.bubbletea.Program;
 import org.springaicommunity.agents.cli.core.ChatModel;
+import org.springaicommunity.agents.harness.agents.mini.MiniAgent;
+import org.springaicommunity.agents.harness.agents.mini.MiniAgentConfig;
+import org.springframework.ai.anthropic.AnthropicChatModel;
+import org.springframework.ai.anthropic.api.AnthropicApi;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
+import picocli.CommandLine.Parameters;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.concurrent.Callable;
 
 /**
  * Agent Harness CLI - A terminal interface for AI-powered coding assistance.
  * <p>
  * Built with TUI4J (Bubble Tea for Java) for rich terminal UI.
+ * Supports three execution modes:
+ * <ul>
+ *   <li><b>TUI mode</b> (default) - Interactive terminal UI</li>
+ *   <li><b>Linear mode</b> (--linear) - Plain I/O for expect testing</li>
+ *   <li><b>Print mode</b> (-p) - Single-task execution for CI</li>
+ * </ul>
  */
 @Command(
         name = "agent-harness-cli",
@@ -60,24 +76,174 @@ public class AgentCli implements Callable<Integer> {
             description = "Interactive mode with plain I/O (for testing with expect)")
     private boolean linearMode;
 
+    @Parameters(index = "0", arity = "0..1",
+            description = "Prompt for -p mode (or read from stdin)")
+    private String prompt;
+
     @Override
     public Integer call() {
         if (printMode) {
-            // Print mode: run once and exit (Phase 4)
-            System.out.println("Print mode not yet implemented. Use TUI mode.");
-            return 1;
+            return runPrintMode();
         }
 
         if (linearMode) {
-            // Linear mode: interactive with plain I/O (Phase 4)
-            System.out.println("Linear mode not yet implemented. Use TUI mode.");
-            return 1;
+            return runLinearMode();
         }
 
         // TUI mode (default)
         Program program = new Program(new ChatModel());
         program.run();
         return 0;
+    }
+
+    /**
+     * Run in print mode: single-task execution, then exit.
+     */
+    private Integer runPrintMode() {
+        String input = getInputForPrintMode();
+        if (input == null || input.isBlank()) {
+            System.err.println("Error: -p/--print mode requires input (argument or stdin)");
+            return 1;
+        }
+
+        try {
+            MiniAgent agent = createAgent(false);
+            var result = agent.run(input);
+            System.out.println(result.output());
+            return result.isSuccess() ? 0 : 1;
+        } catch (Exception e) {
+            System.err.println("Error: " + e.getMessage());
+            return 1;
+        }
+    }
+
+    /**
+     * Run in linear mode: interactive loop with plain I/O.
+     */
+    private Integer runLinearMode() {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+             PrintWriter writer = new PrintWriter(System.out, true)) {
+
+            LinearAgentCallback callback = new LinearAgentCallback(writer, reader);
+            MiniAgent agent = createAgent(true, callback);
+
+            writer.println("Agent Harness CLI (linear mode)");
+            writer.println("Type 'q' or '/quit' to exit");
+            writer.println();
+
+            while (true) {
+                writer.print("> ");
+                writer.flush();
+
+                String line = reader.readLine();
+                if (line == null) {
+                    break; // EOF
+                }
+
+                line = line.trim();
+                if (line.isEmpty()) {
+                    continue;
+                }
+
+                if ("q".equalsIgnoreCase(line) || "/quit".equalsIgnoreCase(line)) {
+                    break;
+                }
+
+                if ("/clear".equalsIgnoreCase(line)) {
+                    agent.clearSession();
+                    writer.println("Session cleared.");
+                    continue;
+                }
+
+                try {
+                    var result = agent.chat(line, callback);
+                    if (!result.isSuccess()) {
+                        writer.printf("[%s]%n", result.status());
+                    }
+                } catch (Exception e) {
+                    writer.println("Error: " + e.getMessage());
+                }
+                writer.println();
+            }
+
+            writer.println("Goodbye!");
+            return 0;
+        } catch (IOException e) {
+            System.err.println("Error: " + e.getMessage());
+            return 1;
+        }
+    }
+
+    /**
+     * Get input for print mode: from argument or stdin.
+     */
+    private String getInputForPrintMode() {
+        if (prompt != null && !prompt.isBlank()) {
+            return prompt;
+        }
+
+        // Try reading from stdin (for piped input)
+        try {
+            if (System.in.available() > 0) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    sb.append(line).append("\n");
+                }
+                return sb.toString().trim();
+            }
+        } catch (IOException e) {
+            // Ignore
+        }
+
+        return null;
+    }
+
+    /**
+     * Create MiniAgent for autonomous mode (no session, no callback).
+     */
+    private MiniAgent createAgent(boolean withSession) {
+        return createAgent(withSession, null);
+    }
+
+    /**
+     * Create MiniAgent with optional session and callback.
+     */
+    private MiniAgent createAgent(boolean withSession, LinearAgentCallback callback) {
+        String apiKey = System.getenv("ANTHROPIC_API_KEY");
+        if (apiKey == null || apiKey.isBlank()) {
+            throw new IllegalStateException("ANTHROPIC_API_KEY environment variable not set");
+        }
+
+        var anthropicApi = new AnthropicApi(apiKey);
+        var chatModel = AnthropicChatModel.builder()
+                .anthropicApi(anthropicApi)
+                .defaultOptions(org.springframework.ai.anthropic.AnthropicChatOptions.builder()
+                        .model(model)
+                        .build())
+                .build();
+
+        var config = MiniAgentConfig.builder()
+                .workingDirectory(directory)
+                .maxTurns(maxTurns)
+                .commandTimeout(Duration.ofSeconds(120))
+                .build();
+
+        var builder = MiniAgent.builder()
+                .config(config)
+                .model(chatModel);
+
+        if (withSession) {
+            builder.sessionMemory();
+        }
+
+        if (callback != null) {
+            builder.agentCallback(callback)
+                    .interactive(true);
+        }
+
+        return builder.build();
     }
 
     public static void main(String[] args) {
