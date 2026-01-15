@@ -1,5 +1,15 @@
 # Agent Harness CLI
 
+```
+    🖥️
+      \
+       💥════► ✨
+      /
+    👤
+
+    agent-harness-cli
+```
+
 Terminal User Interface for [Agent Harness](https://github.com/markpollack/agent-harness) - an agentic CLI built with TUI4J.
 
 ## Overview
