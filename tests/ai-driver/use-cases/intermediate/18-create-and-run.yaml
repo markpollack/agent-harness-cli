@@ -1,0 +1,28 @@
+# Level 7: Create a program and verify it runs
+# Tests end-to-end development cycle
+name: Create and Run Program
+category: intermediate
+difficulty: hard
+requiresApi: true
+maxTurns: 25
+timeoutSeconds: 300
+
+setup:
+  files: []
+
+prompt: |
+  Create a Java program that:
+  1. Create HelloWorld.java that prints "Success!" to stdout
+  2. Compile it with javac
+  3. Run it with java to verify it works
+
+expectedBehavior: Agent should create, compile, and run the program successfully
+
+successCriteria:
+  - type: file_exists
+    args: ["HelloWorld.java"]
+  - type: file_contains
+    args: ["HelloWorld.java", "Success!"]
+  - type: file_exists
+    args: ["HelloWorld.class"]
+  - type: no_exceptions

@@ -1,0 +1,46 @@
+# Level 6: Extract method to utility class
+# Tests cross-file refactoring
+name: Extract Method to Utility
+category: intermediate
+difficulty: hard
+requiresApi: true
+maxTurns: 20
+timeoutSeconds: 240
+
+setup:
+  files:
+    - path: "OrderService.java"
+      content: |
+        public class OrderService {
+            public double calculateTotal(double[] prices) {
+                double sum = 0;
+                for (double price : prices) {
+                    sum += price;
+                }
+                return sum * 1.08; // 8% tax
+            }
+
+            public double calculateDiscount(double[] prices, double discountPercent) {
+                double sum = 0;
+                for (double price : prices) {
+                    sum += price;
+                }
+                return sum * (1 - discountPercent / 100);
+            }
+        }
+
+prompt: |
+  Refactor OrderService.java: Extract the duplicated sum calculation into a new
+  MathUtils.java class with a static sumArray(double[]) method. Update both methods
+  in OrderService to use MathUtils.sumArray().
+
+expectedBehavior: Agent should create MathUtils and update OrderService to use it
+
+successCriteria:
+  - type: file_exists
+    args: ["MathUtils.java"]
+  - type: file_contains
+    args: ["MathUtils.java", "static double sumArray"]
+  - type: file_contains
+    args: ["OrderService.java", "MathUtils.sumArray"]
+  - type: no_exceptions

@@ -1,0 +1,86 @@
+# Level 8: Fix code to make tests pass
+# Tests understanding test output and targeted fixes
+name: Test-Driven Bug Fix
+category: intermediate
+difficulty: hard
+requiresApi: true
+maxTurns: 30
+timeoutSeconds: 360
+
+setup:
+  files:
+    - path: "StringUtils.java"
+      content: |
+        public class StringUtils {
+            public static String reverse(String s) {
+                if (s == null) return null;
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < s.length(); i++) {  // Bug: should iterate backwards
+                    sb.append(s.charAt(i));
+                }
+                return sb.toString();
+            }
+
+            public static boolean isPalindrome(String s) {
+                if (s == null) return false;
+                String cleaned = s.toLowerCase();  // Bug: should also remove non-letters
+                return cleaned.equals(reverse(cleaned));
+            }
+
+            public static int countWords(String s) {
+                if (s == null) return 0;
+                return s.split(" ").length;  // Bug: doesn't handle multiple spaces
+            }
+        }
+    - path: "StringUtilsTest.java"
+      content: |
+        public class StringUtilsTest {
+            public static void main(String[] args) {
+                int passed = 0, failed = 0;
+
+                // Test reverse
+                if ("olleh".equals(StringUtils.reverse("hello"))) {
+                    System.out.println("PASS: reverse(hello)");
+                    passed++;
+                } else {
+                    System.out.println("FAIL: reverse(hello) expected 'olleh' got '" + StringUtils.reverse("hello") + "'");
+                    failed++;
+                }
+
+                // Test isPalindrome
+                if (StringUtils.isPalindrome("A man a plan a canal Panama")) {
+                    System.out.println("PASS: isPalindrome with spaces/case");
+                    passed++;
+                } else {
+                    System.out.println("FAIL: isPalindrome should handle 'A man a plan a canal Panama'");
+                    failed++;
+                }
+
+                // Test countWords
+                if (StringUtils.countWords("hello   world") == 2) {
+                    System.out.println("PASS: countWords with multiple spaces");
+                    passed++;
+                } else {
+                    System.out.println("FAIL: countWords('hello   world') expected 2 got " + StringUtils.countWords("hello   world"));
+                    failed++;
+                }
+
+                System.out.println("\nResults: " + passed + " passed, " + failed + " failed");
+                if (failed > 0) System.exit(1);
+            }
+        }
+
+prompt: |
+  Run the tests with "javac *.java && java StringUtilsTest" to see which fail.
+  Fix all bugs in StringUtils.java to make all tests pass.
+
+expectedBehavior: Agent should run tests, interpret output, fix all three bugs
+
+successCriteria:
+  - type: file_contains
+    args: ["StringUtils.java", "s.length() - 1"]
+  - type: file_contains
+    args: ["StringUtils.java", "replaceAll"]
+  - type: file_contains
+    args: ["StringUtils.java", "\\s+"]
+  - type: no_exceptions

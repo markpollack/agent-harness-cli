@@ -1,0 +1,59 @@
+# Level 6: Rename class across multiple files
+# Tests coordinated multi-file changes
+name: Rename Class Across Files
+category: intermediate
+difficulty: hard
+requiresApi: true
+maxTurns: 25
+timeoutSeconds: 300
+
+setup:
+  files:
+    - path: "src/User.java"
+      content: |
+        package src;
+        public class User {
+            private String name;
+            public User(String name) { this.name = name; }
+            public String getName() { return name; }
+        }
+    - path: "src/UserService.java"
+      content: |
+        package src;
+        public class UserService {
+            public User createUser(String name) {
+                return new User(name);
+            }
+            public void printUser(User user) {
+                System.out.println(user.getName());
+            }
+        }
+    - path: "src/Main.java"
+      content: |
+        package src;
+        public class Main {
+            public static void main(String[] args) {
+                UserService service = new UserService();
+                User user = service.createUser("Alice");
+                service.printUser(user);
+            }
+        }
+
+prompt: |
+  Rename the User class to Person across all files:
+  - Rename User.java to Person.java and update the class name
+  - Update all references in UserService.java
+  - Update all references in Main.java
+
+expectedBehavior: Agent should rename the class and update all references consistently
+
+successCriteria:
+  - type: file_exists
+    args: ["src/Person.java"]
+  - type: file_contains
+    args: ["src/Person.java", "public class Person"]
+  - type: file_contains
+    args: ["src/UserService.java", "Person"]
+  - type: file_contains
+    args: ["src/Main.java", "Person"]
+  - type: no_exceptions

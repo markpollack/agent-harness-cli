@@ -1,0 +1,63 @@
+# Level 6: Extract interface from existing class
+# Tests understanding of OOP patterns
+name: Extract Interface from Class
+category: intermediate
+difficulty: hard
+requiresApi: true
+maxTurns: 25
+timeoutSeconds: 300
+
+setup:
+  files:
+    - path: "EmailNotifier.java"
+      content: |
+        public class EmailNotifier {
+            private String smtpServer;
+
+            public EmailNotifier(String smtpServer) {
+                this.smtpServer = smtpServer;
+            }
+
+            public void send(String to, String message) {
+                System.out.println("Sending email to " + to + " via " + smtpServer);
+                System.out.println("Message: " + message);
+            }
+
+            public boolean isAvailable() {
+                return smtpServer != null && !smtpServer.isEmpty();
+            }
+        }
+    - path: "NotificationService.java"
+      content: |
+        public class NotificationService {
+            private EmailNotifier notifier;
+
+            public NotificationService(EmailNotifier notifier) {
+                this.notifier = notifier;
+            }
+
+            public void notify(String user, String message) {
+                if (notifier.isAvailable()) {
+                    notifier.send(user, message);
+                }
+            }
+        }
+
+prompt: |
+  Refactor to support multiple notification types:
+  1. Create a Notifier.java interface with send(String, String) and isAvailable() methods
+  2. Make EmailNotifier implement the Notifier interface
+  3. Update NotificationService to depend on Notifier instead of EmailNotifier
+
+expectedBehavior: Agent should create interface and update both classes correctly
+
+successCriteria:
+  - type: file_exists
+    args: ["Notifier.java"]
+  - type: file_contains
+    args: ["Notifier.java", "interface Notifier"]
+  - type: file_contains
+    args: ["EmailNotifier.java", "implements Notifier"]
+  - type: file_contains
+    args: ["NotificationService.java", "private Notifier notifier"]
+  - type: no_exceptions

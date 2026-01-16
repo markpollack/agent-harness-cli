@@ -1,0 +1,34 @@
+# Level 5: Create a Maven pom.xml from scratch
+# Tests project configuration knowledge
+name: Create Maven POM
+category: intermediate
+difficulty: medium
+requiresApi: true
+maxTurns: 15
+timeoutSeconds: 180
+
+setup:
+  files: []
+
+prompt: |
+  Create a pom.xml for a Maven project with:
+  - groupId: com.example
+  - artifactId: myapp
+  - version: 1.0.0
+  - Java 21 compiler configuration
+  - JUnit 5 dependency for testing
+
+expectedBehavior: Agent should create a valid Maven pom.xml with correct structure
+
+successCriteria:
+  - type: file_exists
+    args: ["pom.xml"]
+  - type: file_contains
+    args: ["pom.xml", "<groupId>com.example</groupId>"]
+  - type: file_contains
+    args: ["pom.xml", "<artifactId>myapp</artifactId>"]
+  - type: file_contains
+    args: ["pom.xml", "junit"]
+  - type: file_contains
+    args: ["pom.xml", "21"]
+  - type: no_exceptions

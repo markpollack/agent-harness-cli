@@ -1,0 +1,39 @@
+# Level 7: Fix a runtime error
+# Tests debugging with execution output
+name: Fix Runtime Error
+category: intermediate
+difficulty: hard
+requiresApi: true
+maxTurns: 25
+timeoutSeconds: 300
+
+setup:
+  files:
+    - path: "Calculator.java"
+      content: |
+        public class Calculator {
+            public static int divide(int a, int b) {
+                return a / b;
+            }
+
+            public static void main(String[] args) {
+                int[] numbers = {10, 5, 0};
+                for (int num : numbers) {
+                    System.out.println("100 / " + num + " = " + divide(100, num));
+                }
+            }
+        }
+
+prompt: |
+  The Calculator.java program throws an ArithmeticException when run.
+  Compile and run it to see the error, then fix the divide method to handle
+  division by zero gracefully (return 0 when dividing by zero).
+
+expectedBehavior: Agent should run the program, identify the division by zero, and fix it
+
+successCriteria:
+  - type: file_contains
+    args: ["Calculator.java", "b == 0"]
+  - type: file_contains
+    args: ["Calculator.java", "return 0"]
+  - type: no_exceptions

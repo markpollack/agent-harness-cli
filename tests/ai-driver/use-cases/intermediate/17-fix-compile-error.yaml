@@ -1,0 +1,34 @@
+# Level 7: Fix compile errors by running javac
+# Tests build tool integration
+name: Fix Compile Errors
+category: intermediate
+difficulty: hard
+requiresApi: true
+maxTurns: 20
+timeoutSeconds: 240
+
+setup:
+  files:
+    - path: "App.java"
+      content: |
+        public class App {
+            public static void main(String[] args) {
+                String message = "Hello"
+                System.out.println(message);
+                int count = "5";  // Type mismatch
+                System.out.println(count);
+            }
+        }
+
+prompt: |
+  The App.java file has compile errors. Run "javac App.java" to see the errors,
+  then fix all of them so the file compiles successfully.
+
+expectedBehavior: Agent should run javac, identify errors, fix them, and verify compilation
+
+successCriteria:
+  - type: file_contains
+    args: ["App.java", 'String message = "Hello";']
+  - type: file_contains
+    args: ["App.java", "int count = 5"]
+  - type: no_exceptions

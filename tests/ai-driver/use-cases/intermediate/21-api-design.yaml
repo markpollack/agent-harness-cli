@@ -1,0 +1,40 @@
+# Level 8: Design and implement a small API
+# Tests architectural thinking and multi-file coordination
+name: Design REST-like API Classes
+category: intermediate
+difficulty: hard
+requiresApi: true
+maxTurns: 35
+timeoutSeconds: 420
+
+setup:
+  files: []
+
+prompt: |
+  Create a simple REST-like API structure for a Todo application:
+
+  1. Todo.java - Model with: id (long), title (String), completed (boolean), constructor, getters, setters
+  2. TodoRepository.java - Interface with: findAll(), findById(long), save(Todo), deleteById(long)
+  3. InMemoryTodoRepository.java - Implementation using HashMap, implements TodoRepository
+  4. TodoService.java - Uses TodoRepository, has methods: getAllTodos(), getTodoById(long), createTodo(String title), completeTodo(long id), deleteTodo(long id)
+
+  Ensure all files compile together with proper imports and type safety.
+
+expectedBehavior: Agent should create a coherent multi-class API design
+
+successCriteria:
+  - type: file_exists
+    args: ["Todo.java"]
+  - type: file_exists
+    args: ["TodoRepository.java"]
+  - type: file_exists
+    args: ["InMemoryTodoRepository.java"]
+  - type: file_exists
+    args: ["TodoService.java"]
+  - type: file_contains
+    args: ["TodoRepository.java", "interface TodoRepository"]
+  - type: file_contains
+    args: ["InMemoryTodoRepository.java", "implements TodoRepository"]
+  - type: file_contains
+    args: ["TodoService.java", "TodoRepository"]
+  - type: no_exceptions

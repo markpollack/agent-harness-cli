@@ -1,0 +1,33 @@
+# Level 5: Create interface and implementation
+# Tests multi-file coordinated creation
+name: Create Interface and Implementation
+category: intermediate
+difficulty: medium
+requiresApi: true
+maxTurns: 20
+timeoutSeconds: 240
+
+setup:
+  files: []
+
+prompt: |
+  Create a Calculator interface and implementation:
+  1. Create Calculator.java interface with methods: add(int, int), subtract(int, int), multiply(int, int)
+  2. Create BasicCalculator.java that implements Calculator with correct implementations
+
+expectedBehavior: Agent should create both files with correct interface/implementation relationship
+
+successCriteria:
+  - type: file_exists
+    args: ["Calculator.java"]
+  - type: file_exists
+    args: ["BasicCalculator.java"]
+  - type: file_contains
+    args: ["Calculator.java", "interface Calculator"]
+  - type: file_contains
+    args: ["Calculator.java", "int add("]
+  - type: file_contains
+    args: ["BasicCalculator.java", "implements Calculator"]
+  - type: file_contains
+    args: ["BasicCalculator.java", "return a + b"]
+  - type: no_exceptions

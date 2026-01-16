@@ -1,0 +1,93 @@
+# Level 8: Fix multiple interconnected bugs
+# Tests complex debugging reasoning
+name: Fix Multiple Interconnected Bugs
+category: intermediate
+difficulty: hard
+requiresApi: true
+maxTurns: 30
+timeoutSeconds: 360
+
+setup:
+  files:
+    - path: "src/ShoppingCart.java"
+      content: |
+        package src;
+        import java.util.ArrayList;
+        import java.util.List;
+
+        public class ShoppingCart {
+            private List<Item> items;
+            private double discount;
+
+            public ShoppingCart() {
+                // Bug 1: items not initialized
+                this.discount = 0;
+            }
+
+            public void addItem(Item item) {
+                items.add(item);  // Will NPE
+            }
+
+            public double getTotal() {
+                double total = 0;
+                for (Item item : items) {
+                    total += item.getPrice();  // Bug 2: doesn't use quantity
+                }
+                return total * (1 - discount);  // Bug 3: discount applied incorrectly (should be /100)
+            }
+
+            public void setDiscount(double percent) {
+                this.discount = percent;
+            }
+        }
+    - path: "src/Item.java"
+      content: |
+        package src;
+
+        public class Item {
+            private String name;
+            private double price;
+            private int quantity;
+
+            public Item(String name, double price, int quantity) {
+                this.name = name;
+                this.price = price;
+                this.quantity = quantity;
+            }
+
+            public String getName() { return name; }
+            public double getPrice() { return price; }
+            public int getQuantity() { return quantity; }
+        }
+    - path: "src/Main.java"
+      content: |
+        package src;
+
+        public class Main {
+            public static void main(String[] args) {
+                ShoppingCart cart = new ShoppingCart();
+                cart.addItem(new Item("Apple", 1.50, 3));
+                cart.addItem(new Item("Bread", 2.00, 2));
+                cart.setDiscount(10);  // 10% discount
+                System.out.println("Total: $" + cart.getTotal());
+                // Expected: (1.50*3 + 2.00*2) * 0.9 = 8.50 * 0.9 = 7.65
+            }
+        }
+
+prompt: |
+  The shopping cart has multiple bugs. Compile and run the code to discover them,
+  then fix all bugs so the total is calculated correctly:
+  - Item price should be multiplied by quantity
+  - Discount percent should work as expected (10 means 10% off)
+  - No NullPointerExceptions
+
+expectedBehavior: Agent should find and fix all three bugs through iterative debugging
+
+successCriteria:
+  - type: file_contains
+    args: ["src/ShoppingCart.java", "new ArrayList"]
+  - type: file_contains
+    args: ["src/ShoppingCart.java", "getQuantity()"]
+  - type: file_contains
+    args: ["src/ShoppingCart.java", "/ 100"]
+  - type: no_exceptions

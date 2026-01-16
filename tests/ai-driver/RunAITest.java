@@ -22,6 +22,8 @@
 import org.springaicommunity.agents.harness.test.TestHarness;
 import org.springaicommunity.agents.harness.test.TestHarnessConfig;
 import org.springaicommunity.agents.harness.test.TestResult;
+import org.springaicommunity.agents.harness.test.comparison.ComparisonReport;
+import org.springaicommunity.agents.harness.test.comparison.ComparisonRunner;
 import org.springaicommunity.agents.harness.test.executor.DefaultCliExecutor;
 import org.springaicommunity.agents.harness.test.usecase.UseCase;
 import org.springaicommunity.agents.harness.test.usecase.UseCaseLoader;
@@ -40,6 +42,7 @@ import java.util.List;
  *   jbang RunAITest.java use-cases/basic/quit.yaml
  *   jbang RunAITest.java --all
  *   jbang RunAITest.java --category bug-fix
+ *   jbang RunAITest.java --compare use-cases/intermediate/21-api-design.yaml
  *   jbang RunAITest.java --list
  */
 public class RunAITest {
@@ -60,6 +63,8 @@ public class RunAITest {
             runAll(harness);
         } else if (args[0].equals("--category") && args.length > 1) {
             runCategory(harness, args[1]);
+        } else if (args[0].equals("--compare") && args.length > 1) {
+            runComparison(harness.config(), args[1]);
         } else if (args[0].equals("--list")) {
             listUseCases();
         } else {
@@ -136,6 +141,79 @@ public class RunAITest {
         System.out.printf("Total: %d use cases%n", allUseCases.size());
     }
 
+    private static void runComparison(TestHarnessConfig config, String useCasePath) throws Exception {
+        Path yamlPath = Path.of(useCasePath);
+        if (!yamlPath.isAbsolute() && !Files.exists(yamlPath)) {
+            yamlPath = USE_CASES_DIR.resolve(useCasePath);
+        }
+
+        System.out.println("Running comparison test: MiniAgent vs Claude Code");
+        System.out.println("=".repeat(60));
+        System.out.println("Use case: " + yamlPath);
+        System.out.println();
+
+        UseCaseLoader loader = new UseCaseLoader();
+        UseCase useCase = loader.load(yamlPath);
+
+        ComparisonRunner runner = new ComparisonRunner(config);
+        ComparisonReport report = runner.compare(useCase);
+
+        System.out.println(report.format());
+
+        // Save report to learnings directory
+        Path learningsDir = Path.of("../../plans/learnings");
+        if (!Files.exists(learningsDir)) {
+            Files.createDirectories(learningsDir);
+        }
+
+        String reportFileName = "comparison-" + useCase.name().replaceAll("[^a-zA-Z0-9]", "-") + ".md";
+        Path reportFile = learningsDir.resolve(reportFileName);
+        Files.writeString(reportFile, formatAsMarkdown(report));
+        System.out.println("Report saved to: " + reportFile);
+    }
+
+    private static String formatAsMarkdown(ComparisonReport report) {
+        StringBuilder md = new StringBuilder();
+        md.append("# Comparison Report: ").append(report.useCase().name()).append("\n\n");
+        md.append("## Summary\n\n");
+        md.append("- **MiniAgent**: ").append(report.miniAgent().success() ? "PASSED" : "FAILED").append("\n");
+        md.append("- **Claude Code**: ").append(report.claudeCode().success() ? "PASSED" : "FAILED").append("\n\n");
+
+        md.append("## Insight\n\n");
+        md.append(report.generateInsight()).append("\n\n");
+
+        md.append("## MiniAgent Execution\n\n");
+        md.append("```\n").append(report.miniAgent().format()).append("```\n\n");
+
+        md.append("## Claude Code Execution\n\n");
+        md.append("```\n").append(report.claudeCode().format()).append("```\n\n");
+
+        var differences = report.analyzeDifferences();
+        if (!differences.isEmpty()) {
+            md.append("## Key Differences\n\n");
+            for (String diff : differences) {
+                md.append("- ").append(diff).append("\n");
+            }
+            md.append("\n");
+        }
+
+        md.append("## Tool Sequences\n\n");
+        md.append("**MiniAgent**: ");
+        if (report.miniAgent().toolSequence().isEmpty()) {
+            md.append("(no tools captured)\n");
+        } else {
+            md.append(String.join(" → ", report.miniAgent().toolSequence())).append("\n");
+        }
+        md.append("**Claude Code**: ");
+        if (report.claudeCode().toolSequence().isEmpty()) {
+            md.append("(no tools captured)\n");
+        } else {
+            md.append(String.join(" → ", report.claudeCode().toolSequence())).append("\n");
+        }
+
+        return md.toString();
+    }
+
     private static void printResult(TestResult result) {
         String status = result.passed() ? "PASSED" : "FAILED";
         System.out.printf("%n%s: %s%n", result.useCaseName(), status);
@@ -192,10 +270,11 @@ public class RunAITest {
               jbang RunAITest.java <use-case.yaml>       Run single use case
               jbang RunAITest.java --all                 Run all use cases
               jbang RunAITest.java --category <name>     Run use cases in category
+              jbang RunAITest.java --compare <use-case>  Compare MiniAgent vs Claude Code
               jbang RunAITest.java --list                List all available use cases
               jbang RunAITest.java --help                Show this help
 
-            Categories: basic, bug-fix, feature, refactor
+            Categories: basic, bug-fix, feature, refactor, intermediate
 
             Environment Variables:
               ANTHROPIC_API_KEY    Required for agent execution (set to run agent tests)
@@ -204,6 +283,7 @@ public class RunAITest {
               jbang RunAITest.java use-cases/basic/quit.yaml
               jbang RunAITest.java --category basic
               jbang RunAITest.java --all
+              jbang RunAITest.java --compare use-cases/bootstrap/01-echo-hello.yaml
             """);
     }
 }

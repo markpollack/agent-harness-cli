@@ -1,0 +1,37 @@
+# Level 5: Create a complete Java class from description
+# Tests multi-step code generation
+name: Create Java Class
+category: intermediate
+difficulty: medium
+requiresApi: true
+maxTurns: 15
+timeoutSeconds: 180
+
+setup:
+  files: []
+
+prompt: |
+  Create a Java class called Person.java with:
+  - Private fields: String name, int age
+  - A constructor that takes both fields
+  - Getter methods for both fields
+  - A toString() method that returns "Person[name=X, age=Y]"
+
+expectedBehavior: Agent should create a complete, syntactically correct Java class
+
+successCriteria:
+  - type: file_exists
+    args: ["Person.java"]
+  - type: file_contains
+    args: ["Person.java", "private String name"]
+  - type: file_contains
+    args: ["Person.java", "private int age"]
+  - type: file_contains
+    args: ["Person.java", "public Person("]
+  - type: file_contains
+    args: ["Person.java", "getName()"]
+  - type: file_contains
+    args: ["Person.java", "getAge()"]
+  - type: file_contains
+    args: ["Person.java", "toString()"]
+  - type: no_exceptions
