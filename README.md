@@ -31,7 +31,11 @@ This project depends on SNAPSHOT artifacts that must be built locally first:
 git clone https://github.com/springaicommunity/spring-ai-agent-utils.git
 cd spring-ai-agent-utils && ./mvnw install -DskipTests && cd ..
 
-# 2. Clone and build agent-harness
+# 2. Clone and build spring-ai-sandbox
+git clone https://github.com/springaicommunity/spring-ai-sandbox.git
+cd spring-ai-sandbox && ./mvnw install -DskipTests && cd ..
+
+# 3. Clone and build agent-harness
 git clone https://github.com/markpollack/agent-harness.git
 cd agent-harness && ./mvnw install -DskipTests && cd ..
 ```
