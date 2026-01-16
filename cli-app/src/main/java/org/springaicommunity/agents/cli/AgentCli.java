@@ -53,6 +53,24 @@ import java.util.concurrent.Callable;
 )
 public class AgentCli implements Callable<Integer> {
 
+    // ANSI color codes
+    private static final String GREEN = "\u001B[32m";
+    private static final String RESET = "\u001B[0m";
+
+    private static final String BANNER = """
+                  🖥️
+                   \\
+                    💥%s════►%s ✨
+                   /
+                  👤
+
+            agent-harness-cli v0.1.0
+            """.formatted(GREEN, RESET);
+
+    private void printBanner() {
+        System.out.println(BANNER);
+    }
+
     @Option(names = {"-d", "--directory"},
             description = "Working directory (default: current directory)",
             defaultValue = ".")
@@ -91,6 +109,7 @@ public class AgentCli implements Callable<Integer> {
         }
 
         // TUI mode (default)
+        printBanner();
         Program program = new Program(new ChatModel());
         program.run();
         return 0;
@@ -127,7 +146,7 @@ public class AgentCli implements Callable<Integer> {
             LinearAgentCallback callback = new LinearAgentCallback(writer, reader);
             MiniAgent agent = null; // Lazy initialization
 
-            writer.println("Agent Harness CLI (linear mode)");
+            printBanner();
             writer.println("Type 'q' or '/quit' to exit");
             writer.println();
 
