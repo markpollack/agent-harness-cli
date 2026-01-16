@@ -1,0 +1,52 @@
+# Fix NullPointerException - classic defensive coding fix
+# This test REQUIRES ANTHROPIC_API_KEY
+
+name: Fix NullPointerException
+category: bug-fix
+difficulty: easy
+requiresApi: true
+
+setup:
+  workspace: /tmp/test-fix-null-{{timestamp}}
+  files:
+    - path: src/Main.java
+      content: |
+        public class Main {
+            public void process(String s) {
+                // BUG: This will throw NPE if s is null
+                System.out.println(s.length());
+            }
+
+            public static void main(String[] args) {
+                Main m = new Main();
+                m.process(null); // This crashes!
+            }
+        }
+
+prompt: |
+  Fix the NullPointerException bug in src/Main.java.
+  The process method crashes when s is null.
+  Add a null check and print "null" if s is null.
+  Submit when done.
+
+questionStrategy:
+  defaultStrategy: first
+  overrides:
+    "approach": "defensive"
+    "pattern": "null check"
+
+expectedBehavior: |
+  The agent should:
+  1. Read Main.java to understand the code
+  2. Identify the null pointer issue in process method
+  3. Add a null check: if (s == null) { print "null"; return; }
+  4. Write the fixed file
+  5. The fix should handle null gracefully
+
+successCriteria:
+  - type: file_contains
+    args: ["src/Main.java", "== null"]
+  - type: no_exceptions
+
+maxTurns: 10
+timeoutSeconds: 120

@@ -1,0 +1,22 @@
+# Level 2: Edit existing file
+# Foundation for bug-fix scenarios
+name: Edit File Content
+category: bootstrap
+difficulty: medium
+requiresApi: true
+maxTurns: 8
+timeoutSeconds: 90
+
+setup:
+  files:
+    - path: "greeting.txt"
+      content: "Hello, NAME!"
+
+prompt: "Edit greeting.txt to replace NAME with 'World'"
+
+expectedBehavior: Agent should edit the file and replace the placeholder
+
+successCriteria:
+  - type: file_contains
+    args: ["greeting.txt", "Hello, World!"]
+  - type: no_exceptions

@@ -1,0 +1,34 @@
+# Level 4: Implement a method from spec
+# Tests code generation capability
+name: Implement Method
+category: bootstrap
+difficulty: hard
+requiresApi: true
+maxTurns: 15
+timeoutSeconds: 180
+
+setup:
+  files:
+    - path: "MathUtils.java"
+      content: |
+        public class MathUtils {
+            /**
+             * Returns true if n is a prime number, false otherwise.
+             * A prime number is only divisible by 1 and itself.
+             */
+            public static boolean isPrime(int n) {
+                // TODO: Implement this method
+                return false;
+            }
+        }
+
+prompt: "Implement the isPrime method in MathUtils.java according to its documentation."
+
+expectedBehavior: Agent should implement a correct prime checking algorithm
+
+successCriteria:
+  - type: file_contains
+    args: ["MathUtils.java", "for"]
+  - type: file_contains
+    args: ["MathUtils.java", "return true"]
+  - type: no_exceptions

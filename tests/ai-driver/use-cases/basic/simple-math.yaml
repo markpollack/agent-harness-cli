@@ -1,0 +1,25 @@
+# Simple math test - validates basic agent interaction
+# This test REQUIRES ANTHROPIC_API_KEY
+
+name: Simple Math Question
+category: basic
+difficulty: easy
+requiresApi: true
+
+prompt: "What is 2+2? Reply with just the number and then quit."
+
+expectedBehavior: |
+  The agent should:
+  1. Understand the math question
+  2. Respond with "4" (the answer)
+  3. Exit or allow user to quit
+
+questionStrategy:
+  defaultStrategy: first
+
+successCriteria:
+  - type: output_contains
+    args: ["4"]
+
+maxTurns: 3
+timeoutSeconds: 60

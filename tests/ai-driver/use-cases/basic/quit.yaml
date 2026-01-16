@@ -1,0 +1,24 @@
+# Quit command test - validates basic CLI functionality
+# This test does NOT require ANTHROPIC_API_KEY
+
+name: Quit Command
+category: basic
+difficulty: easy
+requiresApi: false
+
+prompt: "q"
+
+expectedBehavior: |
+  The agent should:
+  1. Accept the 'q' command
+  2. Display "Goodbye!" message
+  3. Exit cleanly without errors
+
+successCriteria:
+  - type: output_contains
+    args: ["Goodbye"]
+  - type: exit_code
+    args: ["0"]
+
+maxTurns: 1
+timeoutSeconds: 10

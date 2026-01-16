@@ -1,0 +1,26 @@
+# Level 2: Multi-tool - read multiple files
+# Mirrors Terminal-Bench: read_many_files
+name: Read Multiple Files
+category: bootstrap
+difficulty: easy
+requiresApi: true
+maxTurns: 8
+timeoutSeconds: 90
+
+setup:
+  files:
+    - path: "config/database.txt"
+      content: "host=localhost"
+    - path: "config/server.txt"
+      content: "port=8080"
+
+prompt: "Read both files in the config/ directory and tell me the database host and server port."
+
+expectedBehavior: Agent should read both files and combine the information
+
+successCriteria:
+  - type: output_contains
+    args: ["localhost"]
+  - type: output_contains
+    args: ["8080"]
+  - type: no_exceptions

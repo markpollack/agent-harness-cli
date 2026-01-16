@@ -1,0 +1,27 @@
+# Level 3: Simple bug fix - syntax error
+# Mirrors Terminal-Bench: broken-python
+name: Fix Syntax Error
+category: bootstrap
+difficulty: medium
+requiresApi: true
+maxTurns: 10
+timeoutSeconds: 120
+
+setup:
+  files:
+    - path: "Calculator.java"
+      content: |
+        public class Calculator {
+            public int add(int a, int b) {
+                return a + b  // Missing semicolon
+            }
+        }
+
+prompt: "Fix the syntax error in Calculator.java"
+
+expectedBehavior: Agent should identify and fix the missing semicolon
+
+successCriteria:
+  - type: file_contains
+    args: ["Calculator.java", "return a + b;"]
+  - type: no_exceptions

@@ -1,0 +1,29 @@
+# Level 3: Bug fix - NullPointerException
+# Classic defensive coding pattern
+name: Add Null Check
+category: bootstrap
+difficulty: medium
+requiresApi: true
+maxTurns: 10
+timeoutSeconds: 120
+
+setup:
+  files:
+    - path: "StringUtils.java"
+      content: |
+        public class StringUtils {
+            public int getLength(String s) {
+                return s.length();
+            }
+        }
+
+prompt: "The getLength method in StringUtils.java throws NullPointerException when s is null. Fix it to return 0 for null input."
+
+expectedBehavior: Agent should add null check before calling length()
+
+successCriteria:
+  - type: file_contains
+    args: ["StringUtils.java", "null"]
+  - type: file_contains
+    args: ["StringUtils.java", "return 0"]
+  - type: no_exceptions

@@ -1,0 +1,117 @@
+Agent Harness CLI (linear mode)
+Type 'q' or '/quit' to exit
+
+> 21:56:26.500 [main] DEBUG reactor.util.Loggers -- Using Slf4j logging framework
+21:56:26.568 [main] DEBUG com.github.victools.jsonschema.generator.impl.SchemaGenerationContextImpl -- storing configured custom inline type for java.lang.String as definition (since it is the main schema "#")
+21:56:26.586 [main] DEBUG com.github.victools.jsonschema.generator.impl.SchemaGenerationContextImpl -- storing configured custom inline type for java.lang.String as definition (since it is the main schema "#")
+21:56:26.589 [main] DEBUG com.github.victools.jsonschema.generator.impl.SchemaGenerationContextImpl -- storing configured custom inline type for java.lang.String as definition (since it is the main schema "#")
+21:56:26.590 [main] DEBUG com.github.victools.jsonschema.generator.impl.SchemaGenerationContextImpl -- storing configured custom inline type for java.lang.String as definition (since it is the main schema "#")
+21:56:26.593 [main] DEBUG com.github.victools.jsonschema.generator.impl.SchemaGenerationContextImpl -- generating array definition for java.util.List<org.springaicommunity.agent.tools.AskUserQuestionTool$Question>
+21:56:26.596 [main] DEBUG com.github.victools.jsonschema.generator.impl.SchemaGenerationContextImpl -- generating definition for org.springaicommunity.agent.tools.AskUserQuestionTool$Question
+21:56:26.597 [main] DEBUG com.github.victools.jsonschema.generator.impl.MemberCollectionContextImpl -- collecting non-static fields and methods from org.springaicommunity.agent.tools.AskUserQuestionTool$Question
+21:56:26.618 [main] DEBUG com.github.victools.jsonschema.generator.impl.SchemaGenerationContextImpl -- directly applying configured custom inline type for java.lang.String
+21:56:26.624 [main] DEBUG com.github.victools.jsonschema.generator.impl.SchemaGenerationContextImpl -- directly applying configured custom inline type for java.lang.Boolean
+21:56:26.626 [main] DEBUG com.github.victools.jsonschema.generator.impl.SchemaGenerationContextImpl -- generating array definition for java.util.List<org.springaicommunity.agent.tools.AskUserQuestionTool$Question$Option>
+21:56:26.627 [main] DEBUG com.github.victools.jsonschema.generator.impl.SchemaGenerationContextImpl -- generating definition for org.springaicommunity.agent.tools.AskUserQuestionTool$Question$Option
+21:56:26.628 [main] DEBUG com.github.victools.jsonschema.generator.impl.MemberCollectionContextImpl -- collecting non-static fields and methods from org.springaicommunity.agent.tools.AskUserQuestionTool$Question$Option
+21:56:26.630 [main] DEBUG com.github.victools.jsonschema.generator.impl.SchemaGenerationContextImpl -- directly applying configured custom inline type for java.lang.String
+21:56:26.631 [main] DEBUG com.github.victools.jsonschema.generator.impl.SchemaGenerationContextImpl -- directly applying configured custom inline type for java.lang.String
+21:56:26.632 [main] DEBUG com.github.victools.jsonschema.generator.impl.SchemaGenerationContextImpl -- directly applying configured custom inline type for java.lang.String
+21:56:26.637 [main] DEBUG com.github.victools.jsonschema.generator.impl.SchemaGenerationContextImpl -- generating definition for java.util.Map<java.lang.String,java.lang.String>
+21:56:26.637 [main] DEBUG com.github.victools.jsonschema.generator.impl.MemberCollectionContextImpl -- collecting non-static fields and methods from java.util.Map<java.lang.String,java.lang.String>
+21:56:26.641 [main] DEBUG com.github.victools.jsonschema.generator.impl.SchemaGenerationContextImpl -- generating array definition for java.util.List<org.springaicommunity.agent.tools.AskUserQuestionTool$Question>
+21:56:26.641 [main] DEBUG com.github.victools.jsonschema.generator.impl.SchemaGenerationContextImpl -- generating definition for org.springaicommunity.agent.tools.AskUserQuestionTool$Question
+21:56:26.641 [main] DEBUG com.github.victools.jsonschema.generator.impl.MemberCollectionContextImpl -- collecting non-static fields and methods from org.springaicommunity.agent.tools.AskUserQuestionTool$Question
+21:56:26.642 [main] DEBUG com.github.victools.jsonschema.generator.impl.SchemaGenerationContextImpl -- directly applying configured custom inline type for java.lang.String
+21:56:26.643 [main] DEBUG com.github.victools.jsonschema.generator.impl.SchemaGenerationContextImpl -- directly applying configured custom inline type for java.lang.Boolean
+21:56:26.643 [main] DEBUG com.github.victools.jsonschema.generator.impl.SchemaGenerationContextImpl -- generating array definition for java.util.List<org.springaicommunity.agent.tools.AskUserQuestionTool$Question$Option>
+21:56:26.643 [main] DEBUG com.github.victools.jsonschema.generator.impl.SchemaGenerationContextImpl -- generating definition for org.springaicommunity.agent.tools.AskUserQuestionTool$Question$Option
+21:56:26.643 [main] DEBUG com.github.victools.jsonschema.generator.impl.MemberCollectionContextImpl -- collecting non-static fields and methods from org.springaicommunity.agent.tools.AskUserQuestionTool$Question$Option
+21:56:26.644 [main] DEBUG com.github.victools.jsonschema.generator.impl.SchemaGenerationContextImpl -- directly applying configured custom inline type for java.lang.String
+21:56:26.645 [main] DEBUG com.github.victools.jsonschema.generator.impl.SchemaGenerationContextImpl -- directly applying configured custom inline type for java.lang.String
+21:56:26.645 [main] DEBUG com.github.victools.jsonschema.generator.impl.SchemaGenerationContextImpl -- directly applying configured custom inline type for java.lang.String
+21:56:26.646 [main] DEBUG com.github.victools.jsonschema.generator.impl.SchemaGenerationContextImpl -- generating definition for java.util.Map<java.lang.String,java.lang.String>
+21:56:26.646 [main] DEBUG com.github.victools.jsonschema.generator.impl.MemberCollectionContextImpl -- collecting non-static fields and methods from java.util.Map<java.lang.String,java.lang.String>
+[Thinking...]
+21:56:26.656 [main] INFO org.springaicommunity.agents.harness.agents.mini.MiniAgent -- MiniAgent starting: Read the file test-file.txt and tell me what the secret code is.
+21:56:26.663 [main] DEBUG io.micrometer.common.util.internal.logging.InternalLoggerFactory -- Using SLF4J as the default logging framework
+21:56:26.665 [main] DEBUG org.springaicommunity.agents.harness.patterns.advisor.AgentLoopAdvisor -- Loop initialized: runId=235ff943-01cb-4360-8fbb-92f396588a7c, maxTurns=20, timeout=PT10M
+[Thinking...]
+21:56:26.666 [main] DEBUG org.springaicommunity.agents.harness.patterns.advisor.AgentLoopAdvisor -- Turn 1 starting for run 235ff943-01cb-4360-8fbb-92f396588a7c
+21:56:26.753 [main] DEBUG org.springframework.ai.anthropic.api.utils.CacheEligibilityResolver -- Caching not enabled for tool definition, cacheStrategy=NONE
+21:56:26.757 [main] DEBUG org.springframework.core.retry.RetryTemplate -- Preparing to execute retryable operation 'org.springframework.ai.anthropic.AnthropicChatModel$$Lambda/0x000077c15c337168'
+21:56:26.804 [main] DEBUG org.springframework.web.client.DefaultRestClient -- Writing [ChatCompletionRequest[model=claude-sonnet-4-20250514, messages=[AnthropicMessage[content=[ContentBlock[type=TEXT, source=null, text=Read the file test-file.txt and tell me what the secret code is., index=null, id=null, name=null, input=null, toolUseId=null, content=null, signature=null, thinking=null, data=null, cacheControl=null, title=null, context=null, citations=null, fileId=null, filename=null]], role=USER]], system=You are an autonomous AI assistant that solves tasks by executing bash commands.
+
+You have access to a bash tool to execute commands. When you have completed the task,
+use the submit tool to provide your final answer.
+
+Important:
+- Execute one command at a time
+- Check command output before proceeding
+- If a command fails, analyze the error and try a different approach
+, maxTokens=4096, metadata=null, stopSequences=null, stream=false, temperature=null, topP=null, topK=null, tools=[Tool[type=null, name=submit, description=Submit your final answer when the task is complete. This ends the conversation., inputSchema={$schema=https://json-schema.org/draft/2020-12/schema, type=object, properties={arg0={type=string, description=The final answer or result of the task}}, required=[arg0], additionalProperties=false}, cacheControl=null], Tool[type=null, name=bash, description=Execute a bash command in the working directory. Returns stdout and stderr., inputSchema={$schema=https://json-schema.org/draft/2020-12/schema, type=object, properties={arg0={type=string, description=The bash command to execute}}, required=[arg0], additionalProperties=false}, cacheControl=null], Tool[type=null, name=AskUserQuestionTool, description=Use this tool when you need to ask the user questions during execution. This allows you to:
+1. Gather user preferences or requirements
+2. Clarify ambiguous instructions
+3. Get decisions on implementation choices as you work
+4. Offer choices to the user about what direction to take.
+
+Usage notes:
+- Users will always be able to select "Other" to provide custom text input
+- Use multiSelect: true to allow multiple answers to be selected for a question
+- If you recommend a specific option, make that the first option in the list and add "(Recommended)" at the end of the label
+, inputSchema={$schema=https://json-schema.org/draft/2020-12/schema, type=object, properties={questions={type=array, items={type=object, properties={header={type=string, description=Very short label displayed as a chip/tag (max 12 chars). Examples: "Auth method", "Library", "Approach"}, multiSelect={type=boolean, description=Set to true to allow the user to select multiple options instead of just one. Use when choices are not mutually exclusive. Defaults to false if null.}, options={description=The available choices for this question. Must have 2-4 options. Each option should be a distinct, mutually exclusive choice (unless multiSelect is enabled)., type=array, items={type=object, properties={description={type=string, description=Explanation of what this option means or what will happen if chosen. Useful for providing context about trade-offs or implications.}, label={type=string, description=The display text for this option that the user will see and select. Should be concise (1-5 words) and clearly describe the choice.}}, required=[description, label]}}, question={type=string, description=The complete question to ask the user. Should be clear, specific, and end with a question mark. Example: "Which library should we use for date formatting?"}}, required=[header, multiSelect, options, question]}, description=Questions to ask the user (1-4 questions)}, answers={type=object, description=User answers collected by the permission component}}, required=[questions], additionalProperties=false}, cacheControl=null]], toolChoice=null, thinking=null, outputFormat=null, container=null]] as "application/json" with org.springframework.http.converter.json.MappingJackson2HttpMessageConverter
+21:56:29.263 [main] DEBUG org.springframework.web.client.DefaultRestClient -- Reading to [org.springframework.ai.anthropic.api.AnthropicApi$ChatCompletionResponse]
+21:56:29.271 [main] DEBUG org.springframework.core.retry.RetryTemplate -- Retryable operation 'org.springframework.ai.anthropic.AnthropicChatModel$$Lambda/0x000077c15c337168' completed successfully
+21:56:29.275 [main] DEBUG org.springframework.ai.chat.metadata.ChatResponseMetadata -- Ignore null value for key [stop-sequence]
+21:56:29.276 [main] DEBUG org.springaicommunity.agents.harness.patterns.advisor.AgentLoopAdvisor -- Turn 1 completed: tokens=1285, cost=$0.0077, hasToolCalls=false
+21:56:29.277 [main] DEBUG org.springframework.ai.model.tool.DefaultToolCallingManager -- Executing tool call: bash
+21:56:29.281 [main] INFO org.springaicommunity.agents.harness.agents.mini.LoggingToolCallListener --   [bash] {"arg0":"cat test-file.txt"}({})
+21:56:29.281 [main] DEBUG org.springframework.ai.tool.method.MethodToolCallback -- Starting execution of tool: bash
+21:56:29.282 [main] DEBUG org.springaicommunity.agents.harness.agents.mini.MiniAgentTools -- Executing command: cat test-file.txt
+21:56:29.285 [main] DEBUG org.zeroturnaround.exec.ProcessExecutor -- Executing [bash, -c, cat test-file.txt] in ..
+21:56:29.290 [main] DEBUG org.zeroturnaround.exec.ProcessExecutor -- Started Process[pid=2255561, exitValue="not exited"]
+21:56:29.293 [WaitForProcess-Process[pid=2255561, exitValue=0]] DEBUG org.zeroturnaround.exec.WaitForProcess -- Process[pid=2255561, exitValue=0] stopped with exit code 0
+21:56:29.294 [main] DEBUG org.springaicommunity.agents.harness.agents.mini.MiniAgentTools -- Command completed with exit code 0
+21:56:29.294 [main] DEBUG org.springframework.ai.tool.method.MethodToolCallback -- Successful execution of tool: bash
+21:56:29.295 [main] DEBUG org.springframework.ai.tool.execution.DefaultToolCallResultConverter -- Converting tool result to JSON.
+21:56:29.297 [main] INFO org.springaicommunity.agents.harness.agents.mini.LoggingToolCallListener --   [bash] completed in 16ms: "<output>\nThe secret code is: ALPHA-BRAVO-42\n</output>\n<returncode>0</returncode>"
+[Thinking...]
+21:56:29.298 [main] DEBUG org.springaicommunity.agents.harness.patterns.advisor.AgentLoopAdvisor -- Turn 2 starting for run 235ff943-01cb-4360-8fbb-92f396588a7c
+21:56:29.299 [main] DEBUG org.springframework.ai.anthropic.api.utils.CacheEligibilityResolver -- Caching not enabled for messageType=ASSISTANT, contentLength=28, minContentLength=1, cacheStrategy=NONE, usedBreakpoints=0
+21:56:29.300 [main] DEBUG org.springframework.ai.anthropic.api.utils.CacheEligibilityResolver -- Caching not enabled for messageType=TOOL, contentLength=85, minContentLength=1, cacheStrategy=NONE, usedBreakpoints=0
+21:56:29.304 [main] DEBUG org.springframework.ai.anthropic.api.utils.CacheEligibilityResolver -- Caching not enabled for tool definition, cacheStrategy=NONE
+21:56:29.304 [main] DEBUG org.springframework.core.retry.RetryTemplate -- Preparing to execute retryable operation 'org.springframework.ai.anthropic.AnthropicChatModel$$Lambda/0x000077c15c337168'
+21:56:29.305 [main] DEBUG org.springframework.web.client.DefaultRestClient -- Writing [ChatCompletionRequest[model=claude-sonnet-4-20250514, messages=[AnthropicMessage[content=[ContentBlock[type=TEXT, source=null, text=Read the file test-file.txt and tell me what the secret code is., index=null, id=null, name=null, input=null, toolUseId=null, content=null, signature=null, thinking=null, data=null, cacheControl=null, title=null, context=null, citations=null, fileId=null, filename=null]], role=USER], AnthropicMessage[content=[ContentBlock[type=TOOL_USE, source=null, text=null, index=null, id=toolu_01EqgRBqeepSj4jkVb2wwVjD, name=bash, input={arg0=cat test-file.txt}, toolUseId=null, content=null, signature=null, thinking=null, data=null, cacheControl=null, title=null, context=null, citations=null, fileId=null, filename=null]], role=ASSISTANT], AnthropicMessage[content=[ContentBlock[type=TOOL_RESULT, source=null, text=null, index=null, id=null, name=null, input=null, toolUseId=toolu_01EqgRBqeepSj4jkVb2wwVjD, content="<output>\nThe secret code is: ALPHA-BRAVO-42\n</output>\n<returncode>0</returncode>", signature=null, thinking=null, data=null, cacheControl=null, title=null, context=null, citations=null, fileId=null, filename=null]], role=USER]], system=You are an autonomous AI assistant that solves tasks by executing bash commands.
+
+You have access to a bash tool to execute commands. When you have completed the task,
+use the submit tool to provide your final answer.
+
+Important:
+- Execute one command at a time
+- Check command output before proceeding
+- If a command fails, analyze the error and try a different approach
+, maxTokens=4096, metadata=null, stopSequences=null, stream=false, temperature=null, topP=null, topK=null, tools=[Tool[type=null, name=submit, description=Submit your final answer when the task is complete. This ends the conversation., inputSchema={$schema=https://json-schema.org/draft/2020-12/schema, type=object, properties={arg0={type=string, description=The final answer or result of the task}}, required=[arg0], additionalProperties=false}, cacheControl=null], Tool[type=null, name=bash, description=Execute a bash command in the working directory. Returns stdout and stderr., inputSchema={$schema=https://json-schema.org/draft/2020-12/schema, type=object, properties={arg0={type=string, description=The bash command to execute}}, required=[arg0], additionalProperties=false}, cacheControl=null], Tool[type=null, name=AskUserQuestionTool, description=Use this tool when you need to ask the user questions during execution. This allows you to:
+1. Gather user preferences or requirements
+2. Clarify ambiguous instructions
+3. Get decisions on implementation choices as you work
+4. Offer choices to the user about what direction to take.
+
+Usage notes:
+- Users will always be able to select "Other" to provide custom text input
+- Use multiSelect: true to allow multiple answers to be selected for a question
+- If you recommend a specific option, make that the first option in the list and add "(Recommended)" at the end of the label
+, inputSchema={$schema=https://json-schema.org/draft/2020-12/schema, type=object, properties={questions={type=array, items={type=object, properties={header={type=string, description=Very short label displayed as a chip/tag (max 12 chars). Examples: "Auth method", "Library", "Approach"}, multiSelect={type=boolean, description=Set to true to allow the user to select multiple options instead of just one. Use when choices are not mutually exclusive. Defaults to false if null.}, options={description=The available choices for this question. Must have 2-4 options. Each option should be a distinct, mutually exclusive choice (unless multiSelect is enabled)., type=array, items={type=object, properties={description={type=string, description=Explanation of what this option means or what will happen if chosen. Useful for providing context about trade-offs or implications.}, label={type=string, description=The display text for this option that the user will see and select. Should be concise (1-5 words) and clearly describe the choice.}}, required=[description, label]}}, question={type=string, description=The complete question to ask the user. Should be clear, specific, and end with a question mark. Example: "Which library should we use for date formatting?"}}, required=[header, multiSelect, options, question]}, description=Questions to ask the user (1-4 questions)}, answers={type=object, description=User answers collected by the permission component}}, required=[questions], additionalProperties=false}, cacheControl=null]], toolChoice=null, thinking=null, outputFormat=null, container=null]] as "application/json" with org.springframework.http.converter.json.MappingJackson2HttpMessageConverter
+21:56:30.621 [main] DEBUG org.springframework.web.client.DefaultRestClient -- Reading to [org.springframework.ai.anthropic.api.AnthropicApi$ChatCompletionResponse]
+21:56:30.622 [main] DEBUG org.springframework.core.retry.RetryTemplate -- Retryable operation 'org.springframework.ai.anthropic.AnthropicChatModel$$Lambda/0x000077c15c337168' completed successfully
+21:56:30.622 [main] DEBUG org.springframework.ai.chat.metadata.ChatResponseMetadata -- Ignore null value for key [stop-sequence]
+21:56:30.622 [main] DEBUG org.springaicommunity.agents.harness.patterns.advisor.AgentLoopAdvisor -- Turn 2 completed: tokens=1375, cost=$0.0083, hasToolCalls=false
+21:56:30.622 [main] DEBUG org.springframework.ai.model.tool.DefaultToolCallingManager -- Executing tool call: submit
+21:56:30.622 [main] INFO org.springaicommunity.agents.harness.agents.mini.LoggingToolCallListener --   [submit] {"arg0":"The secret code is: ALPHA-BRAVO-42"}({})
+21:56:30.622 [main] DEBUG org.springframework.ai.tool.method.MethodToolCallback -- Starting execution of tool: submit
+21:56:30.623 [main] INFO org.springaicommunity.agents.harness.agents.mini.MiniAgentTools -- Task submitted with answer: The secret code is: ALPHA-BRAVO-42
+21:56:30.623 [main] DEBUG org.springframework.ai.tool.method.MethodToolCallback -- Successful execution of tool: submit
+21:56:30.623 [main] DEBUG org.springframework.ai.tool.execution.DefaultToolCallResultConverter -- Converting tool result to JSON.
+21:56:30.623 [main] INFO org.springaicommunity.agents.harness.agents.mini.LoggingToolCallListener --   [submit] completed in 0ms: "The secret code is: ALPHA-BRAVO-42"
+21:56:30.624 [main] INFO org.springaicommunity.agents.harness.agents.mini.MiniAgent -- MiniAgent completed: 1375 tokens, 2 tool calls
+
+> Goodbye!

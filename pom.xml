@@ -16,6 +16,7 @@
     <modules>
         <module>cli-core</module>
         <module>cli-app</module>
+        <module>harness-test</module>
     </modules>
 
     <licenses>
@@ -52,8 +53,8 @@
         <!-- TUI4J -->
         <tui4j.version>0.2.6</tui4j.version>
 
-        <!-- Spring AI -->
-        <spring-ai.version>1.0.0-M6</spring-ai.version>
+        <!-- Spring AI (must match agent-harness version) -->
+        <spring-ai.version>2.0.0-SNAPSHOT</spring-ai.version>
 
         <!-- Agent Harness -->
         <agent-harness.version>0.1.0-SNAPSHOT</agent-harness.version>
@@ -77,6 +78,9 @@
         <maven-javadoc-plugin.version>3.6.0</maven-javadoc-plugin.version>
         <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
         <maven-shade-plugin.version>3.5.1</maven-shade-plugin.version>
+
+        <!-- Jackson -->
+        <jackson.version>2.17.0</jackson.version>
     </properties>
 
     <dependencyManagement>
@@ -131,6 +135,18 @@
                 <groupId>org.springaicommunity.agents</groupId>
                 <artifactId>cli-core</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+
+            <!-- Jackson -->
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.dataformat</groupId>
+                <artifactId>jackson-dataformat-yaml</artifactId>
+                <version>${jackson.version}</version>
             </dependency>
 
             <!-- Logging -->

@@ -1,0 +1,38 @@
+# Level 4: Search and fix - must use glob/grep
+# Tests codebase navigation
+name: Find and Fix Bug
+category: bootstrap
+difficulty: medium
+requiresApi: true
+maxTurns: 15
+timeoutSeconds: 180
+
+setup:
+  files:
+    - path: "src/main/java/com/example/App.java"
+      content: |
+        package com.example;
+        public class App {
+            public static void main(String[] args) {
+                System.out.println("Hello");
+            }
+        }
+    - path: "src/main/java/com/example/Utils.java"
+      content: |
+        package com.example;
+        public class Utils {
+            public static String greet(String name) {
+                return "Hello, " + name.toUpperCase();  // Bug: NPE if name is null
+            }
+        }
+    - path: "README.md"
+      content: "# Example Project"
+
+prompt: "There's a bug in the Utils class that causes NullPointerException. Find it and fix it."
+
+expectedBehavior: Agent should search for the bug, find it in Utils.java, and add null handling
+
+successCriteria:
+  - type: file_contains
+    args: ["src/main/java/com/example/Utils.java", "null"]
+  - type: no_exceptions

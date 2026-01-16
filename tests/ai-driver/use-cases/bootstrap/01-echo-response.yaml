@@ -1,0 +1,17 @@
+# Level 0: Ultra-simple - no tools needed
+# Mirrors Terminal-Bench: hello-world (difficulty: easy)
+name: Echo Response
+category: bootstrap
+difficulty: easy
+requiresApi: true
+maxTurns: 2
+timeoutSeconds: 30
+
+prompt: "Say 'Hello, World!' and nothing else."
+
+expectedBehavior: Agent should respond with 'Hello, World!'
+
+successCriteria:
+  - type: output_contains
+    args: ["Hello, World!"]
+  - type: no_exceptions

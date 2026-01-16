@@ -1,0 +1,22 @@
+# Level 1: Single tool - file read
+# Mirrors Terminal-Bench: read_file operations
+name: Read File Content
+category: bootstrap
+difficulty: easy
+requiresApi: true
+maxTurns: 5
+timeoutSeconds: 60
+
+setup:
+  files:
+    - path: "test-file.txt"
+      content: "The secret code is: ALPHA-BRAVO-42"
+
+prompt: "Read the file test-file.txt and tell me what the secret code is."
+
+expectedBehavior: Agent should read the file and extract the secret code
+
+successCriteria:
+  - type: output_contains
+    args: ["ALPHA-BRAVO-42"]
+  - type: no_exceptions

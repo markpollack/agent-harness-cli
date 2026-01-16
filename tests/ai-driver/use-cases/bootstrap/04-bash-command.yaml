@@ -1,0 +1,17 @@
+# Level 1: Single tool - bash execution
+# Mirrors Terminal-Bench: run_shell_command
+name: Run Bash Command
+category: bootstrap
+difficulty: easy
+requiresApi: true
+maxTurns: 5
+timeoutSeconds: 60
+
+prompt: "Run the command 'echo Hello from bash' and show me the output."
+
+expectedBehavior: Agent should execute bash and show output
+
+successCriteria:
+  - type: output_contains
+    args: ["Hello from bash"]
+  - type: no_exceptions

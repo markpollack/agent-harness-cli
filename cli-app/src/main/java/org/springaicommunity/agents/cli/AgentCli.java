@@ -125,7 +125,7 @@ public class AgentCli implements Callable<Integer> {
              PrintWriter writer = new PrintWriter(System.out, true)) {
 
             LinearAgentCallback callback = new LinearAgentCallback(writer, reader);
-            MiniAgent agent = createAgent(true, callback);
+            MiniAgent agent = null; // Lazy initialization
 
             writer.println("Agent Harness CLI (linear mode)");
             writer.println("Type 'q' or '/quit' to exit");
@@ -150,9 +150,23 @@ public class AgentCli implements Callable<Integer> {
                 }
 
                 if ("/clear".equalsIgnoreCase(line)) {
-                    agent.clearSession();
-                    writer.println("Session cleared.");
+                    if (agent != null) {
+                        agent.clearSession();
+                        writer.println("Session cleared.");
+                    } else {
+                        writer.println("No session to clear.");
+                    }
                     continue;
+                }
+
+                // Lazy agent creation - only when first message is sent
+                if (agent == null) {
+                    try {
+                        agent = createAgent(true, callback);
+                    } catch (Exception e) {
+                        writer.println("Error creating agent: " + e.getMessage());
+                        continue;
+                    }
                 }
 
                 try {
@@ -216,11 +230,14 @@ public class AgentCli implements Callable<Integer> {
             throw new IllegalStateException("ANTHROPIC_API_KEY environment variable not set");
         }
 
-        var anthropicApi = new AnthropicApi(apiKey);
+        var anthropicApi = AnthropicApi.builder()
+                .apiKey(apiKey)
+                .build();
         var chatModel = AnthropicChatModel.builder()
                 .anthropicApi(anthropicApi)
                 .defaultOptions(org.springframework.ai.anthropic.AnthropicChatOptions.builder()
                         .model(model)
+                        .maxTokens(4096)
                         .build())
                 .build();
 
