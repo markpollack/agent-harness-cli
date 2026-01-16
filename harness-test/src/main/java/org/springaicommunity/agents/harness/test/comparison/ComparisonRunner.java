@@ -25,6 +25,8 @@ import org.springaicommunity.agents.harness.test.executor.ClaudeCodeExecutor;
 import org.springaicommunity.agents.harness.test.executor.DefaultCliExecutor;
 import org.springaicommunity.agents.harness.test.executor.ExecutionResult;
 import org.springaicommunity.agents.harness.test.tracking.ExecutionSummary;
+import org.springaicommunity.agents.harness.test.tracking.OutputParser;
+import org.springaicommunity.agents.harness.test.tracking.ToolCallEvent;
 import org.springaicommunity.agents.harness.test.usecase.UseCase;
 import org.springaicommunity.agents.harness.test.workspace.WorkspaceContext;
 import org.springaicommunity.agents.harness.test.workspace.WorkspaceManager;
@@ -107,15 +109,32 @@ public class ComparisonRunner {
             ExecutionResult result = miniAgentExecutor.execute(execConfig);
             long durationMs = System.currentTimeMillis() - startTime;
 
-            // For MiniAgent, we don't have detailed tool tracking yet
-            // This is a gap we identified - MiniAgent needs TracingToolCallListener
+            // Parse tool calls from CLI output
+            String output = result.output();
+            logger.info("MiniAgent output length: {} chars", output != null ? output.length() : 0);
+
+            // Debug: Check if LoggingToolCallListener output is present
+            if (output != null && output.contains("LoggingToolCallListener")) {
+                logger.info("Found LoggingToolCallListener in output - tool tracking should work");
+            } else {
+                logger.warn("NO LoggingToolCallListener in output - stderr may not be captured");
+                // Log first 500 chars of output for debugging
+                if (output != null && !output.isEmpty()) {
+                    logger.info("Output preview: {}", output.substring(0, Math.min(500, output.length())));
+                }
+            }
+
+            List<ToolCallEvent> toolCalls = OutputParser.parseToolCalls(output);
+            logger.info("Parsed {} tool calls from MiniAgent output", toolCalls.size());
+            int numTurns = OutputParser.countTurns(result.output());
+
             return ExecutionSummary.builder()
                 .agentId("MiniAgent")
-                .toolCalls(List.of())  // TODO: Capture tool calls from MiniAgent
-                .inputTokens(0)         // TODO: Extract from output
+                .toolCalls(toolCalls)
+                .inputTokens(0)         // TODO: Extract from output if available
                 .outputTokens(0)
                 .thinkingTokens(0)
-                .numTurns(extractTurns(result.output()))
+                .numTurns(numTurns)
                 .success(result.isSuccess())
                 .durationMs(durationMs)
                 .build();
@@ -148,18 +167,4 @@ public class ComparisonRunner {
         }
     }
 
-    private int extractTurns(String output) {
-        // Simple heuristic: count occurrences of tool calls or LLM responses
-        // This is a placeholder until we have proper tracking
-        if (output == null || output.isEmpty()) {
-            return 0;
-        }
-        int turns = 0;
-        for (String line : output.split("\n")) {
-            if (line.contains("Tool:") || line.contains("Assistant:")) {
-                turns++;
-            }
-        }
-        return Math.max(1, turns);
-    }
 }

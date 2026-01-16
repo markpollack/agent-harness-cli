@@ -49,7 +49,8 @@ public class DefaultCliExecutor implements CliExecutor {
             ProcessExecutor executor = new ProcessExecutor()
                     .command(config.command())
                     .timeout(config.timeoutSeconds(), TimeUnit.SECONDS)
-                    .readOutput(true);
+                    .readOutput(true)
+                    .redirectErrorStream(true);  // Capture both stdout and stderr
 
             if (config.workingDirectory() != null) {
                 executor.directory(config.workingDirectory().toFile());
