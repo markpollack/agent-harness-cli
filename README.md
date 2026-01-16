@@ -22,6 +22,20 @@ Agent Harness CLI provides a modern terminal interface for interacting with AI a
 - Maven 3.8+
 - `ANTHROPIC_API_KEY` environment variable
 
+## Prerequisites
+
+This project depends on SNAPSHOT artifacts that must be built locally first:
+
+```bash
+# 1. Clone and build spring-ai-agent-utils
+git clone https://github.com/springaicommunity/spring-ai-agent-utils.git
+cd spring-ai-agent-utils && ./mvnw install -DskipTests && cd ..
+
+# 2. Clone and build agent-harness
+git clone https://github.com/markpollack/agent-harness.git
+cd agent-harness && ./mvnw install -DskipTests && cd ..
+```
+
 ## Quick Start
 
 ```bash
