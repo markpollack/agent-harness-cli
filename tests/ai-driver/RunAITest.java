@@ -1,5 +1,6 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 //DEPS org.springaicommunity.agents:harness-test:0.1.0-SNAPSHOT
+//DEPS org.springaicommunity:claude-code-sdk:1.0.0-SNAPSHOT
 //REPOS mavenlocal,mavencentral
 //JAVA 21
 

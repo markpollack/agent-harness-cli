@@ -68,3 +68,4 @@ replay_pid*
 ### Planning and Internal Documentation ###
 plans/
 learnings/
+tests/ai-driver/logs/
