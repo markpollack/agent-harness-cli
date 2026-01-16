@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Suppress verbose DEBUG from JSON schema generator -->
+    <logger name="com.github.victools.jsonschema" level="WARN"/>
+
+    <!-- Suppress verbose Spring AI internals -->
+    <logger name="org.springframework.ai" level="INFO"/>
+
+    <!-- Suppress HTTP client noise -->
+    <logger name="org.apache.hc" level="WARN"/>
+    <logger name="org.apache.http" level="WARN"/>
+
+    <!-- Our code at INFO level -->
+    <logger name="org.springaicommunity" level="INFO"/>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>

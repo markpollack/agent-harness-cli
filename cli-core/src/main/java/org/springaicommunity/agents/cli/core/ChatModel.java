@@ -28,31 +28,41 @@ import com.williamcallahan.tui4j.compat.bubbletea.message.QuitMessage;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * Chat TUI model for Agent Harness CLI.
  * <p>
  * Provides a text input for user messages and displays conversation history.
- * For Phase 3, this echoes user input. Agent integration comes in Phase 4.
+ * The agent function is called synchronously when the user submits input.
  */
 public class ChatModel implements Model {
 
     private final TextInput input;
     private final List<ChatEntry> history;
+    private final Function<String, String> agentFunction;
 
     /**
-     * Creates a new ChatModel with empty history.
+     * Creates a new ChatModel with empty history and echo mode (for testing).
      */
     public ChatModel() {
-        this(new ArrayList<>());
+        this(new ArrayList<>(), text -> "You said: " + text);
     }
 
     /**
-     * Creates a new ChatModel with the given history.
+     * Creates a new ChatModel with the given agent function.
+     */
+    public ChatModel(Function<String, String> agentFunction) {
+        this(new ArrayList<>(), agentFunction);
+    }
+
+    /**
+     * Creates a new ChatModel with the given history and agent function.
      * Used for immutable updates.
      */
-    ChatModel(List<ChatEntry> history) {
+    ChatModel(List<ChatEntry> history, Function<String, String> agentFunction) {
         this.history = new ArrayList<>(history);
+        this.agentFunction = agentFunction;
         this.input = new TextInput();
         this.input.setPrompt("> ");
         this.input.setPlaceholder("Type a message...");
@@ -94,16 +104,18 @@ public class ChatModel implements Model {
     }
 
     /**
-     * Submits user input: adds to history and resets input.
-     * For Phase 3, just echoes back. Phase 4 will integrate with agent.
+     * Submits user input: adds to history, calls agent, and resets input.
+     * The agent function is called synchronously.
      */
     private UpdateResult<ChatModel> submitInput(String text) {
         List<ChatEntry> newHistory = new ArrayList<>(history);
         newHistory.add(ChatEntry.user(text));
-        // Echo the message back (placeholder for agent response in Phase 4)
-        newHistory.add(ChatEntry.assistant("You said: " + text));
 
-        ChatModel newModel = new ChatModel(newHistory);
+        // Call agent synchronously
+        String response = agentFunction.apply(text);
+        newHistory.add(ChatEntry.assistant(response));
+
+        ChatModel newModel = new ChatModel(newHistory, agentFunction);
         return new UpdateResult<>(newModel, null);
     }
 

@@ -110,7 +110,23 @@ public class AgentCli implements Callable<Integer> {
 
         // TUI mode (default)
         printBanner();
-        Program program = new Program(new ChatModel());
+
+        // Create MiniAgent with session memory for multi-turn conversations
+        MiniAgent agent;
+        try {
+            agent = createAgent(true);
+        } catch (Exception e) {
+            System.err.println("Error creating agent: " + e.getMessage());
+            return 1;
+        }
+
+        // Wire agent into TUI - calls agent synchronously
+        ChatModel chatModel = new ChatModel(message -> {
+            var result = agent.run(message);
+            return result.output() != null ? result.output() : "[" + result.status() + "]";
+        });
+
+        Program program = new Program(chatModel);
         program.run();
         return 0;
     }
