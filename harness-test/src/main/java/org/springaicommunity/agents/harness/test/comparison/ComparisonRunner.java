@@ -22,10 +22,9 @@ import org.springaicommunity.agents.harness.test.TestHarnessConfig;
 import org.springaicommunity.agents.harness.test.executor.CliExecutor;
 import org.springaicommunity.agents.harness.test.executor.CliExecutor.ExecutionConfig;
 import org.springaicommunity.agents.harness.test.executor.ClaudeCodeExecutor;
-import org.springaicommunity.agents.harness.test.executor.DefaultCliExecutor;
 import org.springaicommunity.agents.harness.test.executor.ExecutionResult;
+import org.springaicommunity.agents.harness.test.executor.ToolCallRecord;
 import org.springaicommunity.agents.harness.test.tracking.ExecutionSummary;
-import org.springaicommunity.agents.harness.test.tracking.OutputParser;
 import org.springaicommunity.agents.harness.test.tracking.ToolCallEvent;
 import org.springaicommunity.agents.harness.test.usecase.UseCase;
 import org.springaicommunity.agents.harness.test.workspace.WorkspaceContext;
@@ -61,12 +60,18 @@ public class ComparisonRunner {
     private final ClaudeCodeExecutor claudeCodeExecutor;
 
     /**
-     * Creates a comparison runner with the given configuration.
+     * Creates a comparison runner with the given configuration and executor.
+     *
+     * <p>For structured tool call capture, use {@link org.springaicommunity.agents.harness.test.executor.InProcessExecutor}.
+     * For subprocess-based execution, use {@link org.springaicommunity.agents.harness.test.executor.DefaultCliExecutor}.</p>
+     *
+     * @param config the test harness configuration
+     * @param miniAgentExecutor the executor to use for MiniAgent tests
      */
-    public ComparisonRunner(TestHarnessConfig config) {
+    public ComparisonRunner(TestHarnessConfig config, CliExecutor miniAgentExecutor) {
         this.config = config;
         this.workspaceManager = new WorkspaceManager();
-        this.miniAgentExecutor = new DefaultCliExecutor();
+        this.miniAgentExecutor = miniAgentExecutor;
         this.claudeCodeExecutor = new ClaudeCodeExecutor();
     }
 
@@ -109,29 +114,21 @@ public class ComparisonRunner {
             ExecutionResult result = miniAgentExecutor.execute(execConfig);
             long durationMs = System.currentTimeMillis() - startTime;
 
-            // Parse tool calls from CLI output
-            String output = result.output();
-            logger.info("MiniAgent output length: {} chars", output != null ? output.length() : 0);
+            // Get tool calls directly from executor (structured data, no parsing)
+            List<ToolCallRecord> toolCallRecords = miniAgentExecutor.getToolCalls();
+            List<ToolCallEvent> toolCalls = toolCallRecords.stream()
+                .map(ToolCallRecord::toToolCallEvent)
+                .toList();
 
-            // Debug: Check if LoggingToolCallListener output is present
-            if (output != null && output.contains("LoggingToolCallListener")) {
-                logger.info("Found LoggingToolCallListener in output - tool tracking should work");
-            } else {
-                logger.warn("NO LoggingToolCallListener in output - stderr may not be captured");
-                // Log first 500 chars of output for debugging
-                if (output != null && !output.isEmpty()) {
-                    logger.info("Output preview: {}", output.substring(0, Math.min(500, output.length())));
-                }
-            }
+            logger.info("Captured {} tool calls from MiniAgent execution", toolCalls.size());
 
-            List<ToolCallEvent> toolCalls = OutputParser.parseToolCalls(output);
-            logger.info("Parsed {} tool calls from MiniAgent output", toolCalls.size());
-            int numTurns = OutputParser.countTurns(result.output());
+            // Estimate turns from tool call count (each tool call is roughly one turn)
+            int numTurns = Math.max(1, toolCalls.size());
 
             return ExecutionSummary.builder()
                 .agentId("MiniAgent")
                 .toolCalls(toolCalls)
-                .inputTokens(0)         // TODO: Extract from output if available
+                .inputTokens(0)         // TODO: Extract from result if available
                 .outputTokens(0)
                 .thinkingTokens(0)
                 .numTurns(numTurns)

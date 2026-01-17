@@ -41,6 +41,20 @@ public interface CliExecutor {
     ExecutionResult execute(ExecutionConfig config);
 
     /**
+     * Get tool calls captured during the last execution.
+     *
+     * <p>For in-process executors like {@link InProcessExecutor}, this returns
+     * structured tool call data captured via {@link org.springaicommunity.agents.harness.core.ToolCallListener}.
+     * For subprocess executors like {@link DefaultCliExecutor}, this returns an empty list
+     * (tool calls must be parsed from output).</p>
+     *
+     * @return list of tool calls from last execution, or empty list if not available
+     */
+    default List<ToolCallRecord> getToolCalls() {
+        return List.of();
+    }
+
+    /**
      * Configuration for CLI execution.
      */
     record ExecutionConfig(
