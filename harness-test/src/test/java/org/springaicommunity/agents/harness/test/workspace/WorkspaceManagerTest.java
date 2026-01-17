@@ -55,7 +55,7 @@ class WorkspaceManagerTest {
         WorkspaceContext context = manager.setup(useCase);
 
         assertThat(context.workspacePath()).exists();
-        assertThat(context.isTemp()).isTrue();
+        assertThat(context.shouldCleanup()).isTrue(); // Temp directories should cleanup
     }
 
     @Test
@@ -71,7 +71,8 @@ class WorkspaceManagerTest {
 
         assertThat(context.workspacePath()).isEqualTo(workspacePath);
         assertThat(context.workspacePath()).exists();
-        // Note: isTemp may be true since JUnit TempDir uses /tmp
+        // Fixed workspace paths don't auto-cleanup
+        assertThat(context.shouldCleanup()).isFalse();
     }
 
     @Test
@@ -131,9 +132,9 @@ class WorkspaceManagerTest {
     }
 
     @Test
-    void cleanupRemovesWorkspaceWhenIsTemp() throws IOException {
-        // Create a workspace that's detected as temp
-        Path workspacePath = Path.of("/tmp/test-cleanup-" + System.currentTimeMillis());
+    void cleanupDoesNotRemoveFixedWorkspace() throws IOException {
+        // Create a workspace with an explicit path - should NOT auto-cleanup
+        Path workspacePath = tempDir.resolve("fixed-workspace-" + System.currentTimeMillis());
         UseCase useCase = UseCase.builder()
                 .name("Test")
                 .prompt("Do something")
@@ -142,20 +143,33 @@ class WorkspaceManagerTest {
 
         WorkspaceContext context = manager.setup(useCase);
         assertThat(workspacePath).exists();
+        assertThat(context.shouldCleanup()).isFalse(); // Fixed paths don't auto-cleanup
 
         manager.cleanup(context);
 
-        // Should be removed because it's in /tmp
-        assertThat(workspacePath).doesNotExist();
+        // With LocalSandbox, fixed workspace paths are NOT removed on cleanup
+        // (cleanup only removes temp directories created via tempDirectory())
+        assertThat(workspacePath).exists();
     }
 
     @Test
-    void isTemporaryWorkspaceDetectsTmpPath() {
-        assertThat(manager.isTemporaryWorkspace(Path.of("/tmp/test"))).isTrue();
-        assertThat(manager.isTemporaryWorkspace(Path.of("/tmp/deep/nested/path"))).isTrue();
-        assertThat(manager.isTemporaryWorkspace(Path.of("/var/tmp/test"))).isFalse();
-        assertThat(manager.isTemporaryWorkspace(Path.of("/home/user/project"))).isFalse();
-        assertThat(manager.isTemporaryWorkspace(Path.of("/home/user/mytmp/test"))).isFalse();
+    void sandboxCleanupOnCloseWorksForTempDirectories() throws IOException {
+        // When no workspace is specified, a temp directory is created with auto-cleanup
+        UseCase useCase = UseCase.builder()
+                .name("Test")
+                .prompt("Do something")
+                .build();
+
+        WorkspaceContext context = manager.setup(useCase);
+        Path workspacePath = context.workspacePath();
+
+        // Temp directories should cleanup
+        assertThat(context.shouldCleanup()).isTrue();
+        assertThat(workspacePath).exists();
+
+        manager.cleanup(context);
+
+        assertThat(workspacePath).doesNotExist();
     }
 
     @Test

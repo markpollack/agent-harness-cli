@@ -28,7 +28,9 @@ import org.springaicommunity.agents.harness.test.usecase.UseCase;
 import org.springaicommunity.agents.harness.test.usecase.UseCaseLoader;
 import org.springaicommunity.agents.harness.test.validation.JuryFactory;
 import org.springaicommunity.agents.harness.test.validation.TestJudgmentAdapter;
+import org.springaicommunity.agents.harness.test.workspace.WorkspaceContext;
 import org.springaicommunity.agents.harness.test.workspace.WorkspaceManager;
+import org.springaicommunity.sandbox.LocalSandbox;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -239,12 +241,15 @@ class TestHarnessTest {
                 .timeoutSeconds(30)
                 .build();
 
-        var workspace = new org.springaicommunity.agents.harness.test.workspace.WorkspaceContext(
-                tempDir, true, List.of(), useCaseWithTimeout);
+        LocalSandbox sandbox = LocalSandbox.builder()
+                .workingDirectory(tempDir)
+                .build();
+        var workspace = new WorkspaceContext(sandbox, List.of(), useCaseWithTimeout);
 
         ExecutionConfig execConfig = harness.buildExecutionConfig(useCaseWithTimeout, workspace);
 
         assertThat(execConfig.timeoutSeconds()).isEqualTo(30);
+        sandbox.close();
     }
 
     @Test
@@ -254,12 +259,15 @@ class TestHarnessTest {
                 .prompt("prompt")
                 .build();
 
-        var workspace = new org.springaicommunity.agents.harness.test.workspace.WorkspaceContext(
-                tempDir, true, List.of(), useCaseNoTimeout);
+        LocalSandbox sandbox = LocalSandbox.builder()
+                .workingDirectory(tempDir)
+                .build();
+        var workspace = new WorkspaceContext(sandbox, List.of(), useCaseNoTimeout);
 
         ExecutionConfig execConfig = harness.buildExecutionConfig(useCaseNoTimeout, workspace);
 
         assertThat(execConfig.timeoutSeconds()).isEqualTo(config.defaultTimeoutSeconds());
+        sandbox.close();
     }
 
     @Test

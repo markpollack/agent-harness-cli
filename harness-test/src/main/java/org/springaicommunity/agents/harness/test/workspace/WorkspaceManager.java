@@ -20,27 +20,30 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springaicommunity.agents.harness.test.usecase.SetupFile;
 import org.springaicommunity.agents.harness.test.usecase.UseCase;
+import org.springaicommunity.sandbox.LocalSandbox;
+import org.springaicommunity.sandbox.Sandbox;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 /**
- * Manages test workspace setup and cleanup.
+ * Manages test workspace setup and cleanup using the Sandbox API.
  *
  * <p>Responsibilities:</p>
  * <ul>
- *   <li>Create workspace directories</li>
- *   <li>Create setup files within workspace</li>
+ *   <li>Create workspace directories via {@link LocalSandbox}</li>
+ *   <li>Create setup files within workspace using {@link org.springaicommunity.sandbox.SandboxFiles}</li>
  *   <li>Handle timestamp placeholders in paths</li>
- *   <li>Clean up temporary workspaces</li>
+ *   <li>Clean up temporary workspaces via {@link Sandbox#close()}</li>
  * </ul>
+ *
+ * <p>The underlying {@link Sandbox} is stored in the {@link WorkspaceContext} and
+ * closed during {@link #cleanup(WorkspaceContext)}.</p>
  */
 public class WorkspaceManager {
 
@@ -69,42 +72,78 @@ public class WorkspaceManager {
     /**
      * Setup a workspace for the given use case.
      *
+     * <p>Creates a {@link LocalSandbox} with either a temporary directory (auto-cleanup)
+     * or a specified workspace path (no auto-cleanup).</p>
+     *
      * @param useCase the use case to setup workspace for
-     * @return workspace context with paths and cleanup info
+     * @return workspace context with sandbox and cleanup info
      * @throws IOException if workspace cannot be created
      */
     public WorkspaceContext setup(UseCase useCase) throws IOException {
-        Path workspacePath = resolveWorkspacePath(useCase);
-        boolean isTemp = isTemporaryWorkspace(workspacePath);
+        LocalSandbox sandbox = createSandbox(useCase);
 
-        Files.createDirectories(workspacePath);
-        logger.debug("Created workspace: {}", workspacePath);
+        // Ensure the workspace directory exists
+        Files.createDirectories(sandbox.workDir());
+        logger.debug("Created workspace: {}", sandbox.workDir());
 
-        List<Path> createdFiles = createSetupFiles(workspacePath, useCase);
+        List<Path> createdFiles = createSetupFiles(sandbox, useCase);
 
-        return new WorkspaceContext(workspacePath, isTemp, createdFiles, useCase);
+        return new WorkspaceContext(sandbox, createdFiles, useCase);
     }
 
     /**
      * Clean up a workspace after test execution.
      *
+     * <p>Closes the underlying {@link Sandbox}, which will delete the working
+     * directory if it was created as a temp directory.</p>
+     *
      * @param context the workspace context to clean up
      */
     public void cleanup(WorkspaceContext context) {
-        if (context == null || !context.shouldCleanup()) {
+        if (context == null) {
+            return;
+        }
+
+        Sandbox sandbox = context.sandbox();
+        if (sandbox.isClosed()) {
             return;
         }
 
         logger.debug("Cleaning up workspace: {}", context.workspacePath());
-        deleteDirectory(context.workspacePath());
+        sandbox.close();
+    }
+
+    /**
+     * Create a sandbox for the given use case.
+     *
+     * <p>If the use case specifies a workspace path, creates a sandbox with that
+     * fixed directory (no auto-cleanup). Otherwise, creates a temp directory
+     * sandbox (auto-cleanup on close).</p>
+     */
+    LocalSandbox createSandbox(UseCase useCase) throws IOException {
+        Path workspacePath = resolveWorkspacePath(useCase);
+
+        if (workspacePath != null) {
+            // Fixed workspace path - no auto-cleanup
+            return LocalSandbox.builder()
+                    .workingDirectory(workspacePath)
+                    .build();
+        } else {
+            // Temp directory - auto-cleanup on close
+            return LocalSandbox.builder()
+                    .tempDirectory(tempPrefix)
+                    .build();
+        }
     }
 
     /**
      * Resolve the workspace path from use case configuration.
+     *
+     * @return workspace path if specified, null for temp directory
      */
-    Path resolveWorkspacePath(UseCase useCase) throws IOException {
+    Path resolveWorkspacePath(UseCase useCase) {
         if (useCase.setup() == null || useCase.setup().workspace() == null) {
-            return Files.createTempDirectory(tempPrefix);
+            return null;
         }
 
         String workspacePath = useCase.setup().workspace();
@@ -119,18 +158,9 @@ public class WorkspaceManager {
     }
 
     /**
-     * Check if a path represents a temporary workspace.
-     * Only considers paths that START with /tmp/ to be temporary.
+     * Create all setup files in the workspace using the Sandbox files API.
      */
-    boolean isTemporaryWorkspace(Path path) {
-        String pathStr = path.toAbsolutePath().toString();
-        return pathStr.startsWith("/tmp/");
-    }
-
-    /**
-     * Create all setup files in the workspace.
-     */
-    List<Path> createSetupFiles(Path workspace, UseCase useCase) throws IOException {
+    List<Path> createSetupFiles(Sandbox sandbox, UseCase useCase) {
         List<Path> created = new ArrayList<>();
 
         if (useCase.setup() == null || useCase.setup().files() == null) {
@@ -138,43 +168,12 @@ public class WorkspaceManager {
         }
 
         for (SetupFile file : useCase.setup().files()) {
-            Path filePath = workspace.resolve(file.path());
-
-            // Create parent directories
-            if (filePath.getParent() != null) {
-                Files.createDirectories(filePath.getParent());
-            }
-
-            Files.writeString(filePath, file.content());
-            created.add(filePath);
-            logger.debug("Created file: {}", filePath);
+            sandbox.files().create(file.path(), file.content());
+            created.add(sandbox.workDir().resolve(file.path()));
+            logger.debug("Created file: {}", sandbox.workDir().resolve(file.path()));
         }
 
         return created;
-    }
-
-    /**
-     * Delete a directory and all its contents.
-     */
-    void deleteDirectory(Path directory) {
-        try {
-            if (!Files.exists(directory)) {
-                return;
-            }
-            Files.walk(directory)
-                    .sorted(Comparator.reverseOrder())
-                    .forEach(this::deleteQuietly);
-        } catch (IOException e) {
-            logger.warn("Failed to clean up workspace: {}", directory, e);
-        }
-    }
-
-    private void deleteQuietly(Path path) {
-        try {
-            Files.delete(path);
-        } catch (IOException e) {
-            logger.trace("Failed to delete: {}", path, e);
-        }
     }
 
 }

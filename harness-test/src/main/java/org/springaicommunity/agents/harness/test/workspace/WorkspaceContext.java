@@ -17,30 +17,46 @@
 package org.springaicommunity.agents.harness.test.workspace;
 
 import org.springaicommunity.agents.harness.test.usecase.UseCase;
+import org.springaicommunity.sandbox.Sandbox;
 
 import java.nio.file.Path;
 import java.util.List;
 
 /**
- * Context representing a prepared test workspace.
+ * Context representing a prepared test workspace backed by a Sandbox.
  *
- * @param workspacePath absolute path to the workspace directory
- * @param isTemp whether this is a temporary workspace that should be cleaned up
+ * <p>The workspace is managed by a {@link Sandbox} which provides:
+ * <ul>
+ *   <li>Isolated working directory</li>
+ *   <li>File operations via {@link Sandbox#files()}</li>
+ *   <li>Command execution via {@link Sandbox#exec(org.springaicommunity.sandbox.ExecSpec)}</li>
+ *   <li>Automatic cleanup when closed</li>
+ * </ul>
+ *
+ * @param sandbox the sandbox managing this workspace
  * @param createdFiles list of files created during setup
  * @param useCase the use case this workspace was created for
  */
 public record WorkspaceContext(
-    Path workspacePath,
-    boolean isTemp,
+    Sandbox sandbox,
     List<Path> createdFiles,
     UseCase useCase
 ) {
 
     public WorkspaceContext {
-        if (workspacePath == null) {
-            throw new IllegalArgumentException("workspacePath is required");
+        if (sandbox == null) {
+            throw new IllegalArgumentException("sandbox is required");
         }
         createdFiles = createdFiles != null ? List.copyOf(createdFiles) : List.of();
+    }
+
+    /**
+     * Get the workspace path.
+     *
+     * @return absolute path to the workspace directory
+     */
+    public Path workspacePath() {
+        return sandbox.workDir();
     }
 
     /**
@@ -50,14 +66,14 @@ public record WorkspaceContext(
      * @return absolute path
      */
     public Path resolve(String relativePath) {
-        return workspacePath.resolve(relativePath);
+        return workspacePath().resolve(relativePath);
     }
 
     /**
      * Check if this workspace should be cleaned up after test.
      */
     public boolean shouldCleanup() {
-        return isTemp;
+        return sandbox.shouldCleanupOnClose();
     }
 
 }
