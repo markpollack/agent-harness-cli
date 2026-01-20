@@ -31,6 +31,7 @@ import java.util.List;
  *   <li>{@code command_succeeds} - Check if command exits with 0 (args: [command...])</li>
  *   <li>{@code no_exceptions} - Check transcript contains no exceptions (no args)</li>
  *   <li>{@code output_contains} - Check output contains text (args: [text])</li>
+ *   <li>{@code compiles} - Check Java files compile with javac (args: [pattern] optional)</li>
  * </ul>
  *
  * @param type criterion type name
@@ -47,6 +48,7 @@ public record SuccessCriterion(
     public static final String TYPE_COMMAND_SUCCEEDS = "command_succeeds";
     public static final String TYPE_NO_EXCEPTIONS = "no_exceptions";
     public static final String TYPE_OUTPUT_CONTAINS = "output_contains";
+    public static final String TYPE_COMPILES = "compiles";
 
     public SuccessCriterion {
         if (type == null || type.isBlank()) {
@@ -88,6 +90,24 @@ public record SuccessCriterion(
      */
     public static SuccessCriterion outputContains(String text) {
         return new SuccessCriterion(TYPE_OUTPUT_CONTAINS, List.of(text));
+    }
+
+    /**
+     * Create a compiles criterion for Java files.
+     *
+     * @param pattern optional glob pattern (defaults to all .java files)
+     */
+    public static SuccessCriterion compiles(String pattern) {
+        return pattern != null
+                ? new SuccessCriterion(TYPE_COMPILES, List.of(pattern))
+                : new SuccessCriterion(TYPE_COMPILES, List.of());
+    }
+
+    /**
+     * Create a compiles criterion for all Java files.
+     */
+    public static SuccessCriterion compiles() {
+        return compiles(null);
     }
 
 }

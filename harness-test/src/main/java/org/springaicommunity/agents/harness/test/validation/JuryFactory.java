@@ -132,6 +132,7 @@ public class JuryFactory {
             case SuccessCriterion.TYPE_FILE_CONTAINS -> createFileContainsJudge(criterion, workspacePath);
             case SuccessCriterion.TYPE_NO_EXCEPTIONS -> createNoExceptionsJudge();
             case SuccessCriterion.TYPE_OUTPUT_CONTAINS -> createOutputContainsJudge(criterion);
+            case SuccessCriterion.TYPE_COMPILES -> createCompilationJudge(criterion);
             default -> {
                 logger.warn("Unknown criterion type: {}", criterion.type());
                 yield null;
@@ -201,6 +202,11 @@ public class JuryFactory {
         };
     }
 
+    private Judge createCompilationJudge(SuccessCriterion criterion) {
+        String pattern = criterion.args().isEmpty() ? null : criterion.args().get(0);
+        return new CompilationJudge(pattern);
+    }
+
     /**
      * Calculate weight for a criterion based on type.
      */
@@ -211,6 +217,7 @@ public class JuryFactory {
             case SuccessCriterion.TYPE_NO_EXCEPTIONS -> 0.2;
             case SuccessCriterion.TYPE_OUTPUT_CONTAINS -> 0.2;
             case SuccessCriterion.TYPE_COMMAND_SUCCEEDS -> 0.3;
+            case SuccessCriterion.TYPE_COMPILES -> 0.4;  // High weight for compilation check
             default -> 0.1;
         };
     }
