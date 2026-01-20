@@ -161,7 +161,11 @@ public record ToolUsageComparison(
         if (toolSequence == null) {
             return Set.of();
         }
-        return new HashSet<>(toolSequence);
+        // Normalize tool names to lowercase to avoid false gaps from case differences
+        // e.g., "bash" vs "Bash" should be treated as the same tool
+        return toolSequence.stream()
+            .map(String::toLowerCase)
+            .collect(Collectors.toSet());
     }
 
     private static Set<String> intersection(Set<String> a, Set<String> b) {

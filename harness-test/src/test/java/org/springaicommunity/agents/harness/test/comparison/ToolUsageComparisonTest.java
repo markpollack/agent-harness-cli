@@ -43,16 +43,31 @@ class ToolUsageComparisonTest {
 
         ToolUsageComparison comparison = ToolUsageComparison.from(miniAgent, claudeCode);
 
-        // A = {Read, Write, Edit}
-        assertThat(comparison.miniAgentTools()).containsExactlyInAnyOrder("Read", "Write", "Edit");
-        // B = {Read, Bash, TodoWrite}
-        assertThat(comparison.claudeCodeTools()).containsExactlyInAnyOrder("Read", "Bash", "TodoWrite");
-        // A ∩ B = {Read}
-        assertThat(comparison.shared()).containsExactly("Read");
-        // A - B = {Write, Edit}
-        assertThat(comparison.miniAgentOnly()).containsExactlyInAnyOrder("Write", "Edit");
-        // B - A = {Bash, TodoWrite}
-        assertThat(comparison.claudeOnly()).containsExactlyInAnyOrder("Bash", "TodoWrite");
+        // A = {read, write, edit} (normalized to lowercase)
+        assertThat(comparison.miniAgentTools()).containsExactlyInAnyOrder("read", "write", "edit");
+        // B = {read, bash, todowrite} (normalized to lowercase)
+        assertThat(comparison.claudeCodeTools()).containsExactlyInAnyOrder("read", "bash", "todowrite");
+        // A ∩ B = {read}
+        assertThat(comparison.shared()).containsExactly("read");
+        // A - B = {write, edit}
+        assertThat(comparison.miniAgentOnly()).containsExactlyInAnyOrder("write", "edit");
+        // B - A = {bash, todowrite}
+        assertThat(comparison.claudeOnly()).containsExactlyInAnyOrder("bash", "todowrite");
+    }
+
+    @Test
+    void caseInsensitiveComparison() {
+        // MiniAgent uses lowercase "bash"
+        ExecutionSummary miniAgent = createSummary("MiniAgent", List.of("bash", "read"));
+        // Claude uses capitalized "Bash"
+        ExecutionSummary claudeCode = createSummary("ClaudeCode", List.of("Bash", "Read"));
+
+        ToolUsageComparison comparison = ToolUsageComparison.from(miniAgent, claudeCode);
+
+        // Both should normalize to same set, no gaps
+        assertThat(comparison.identicalToolSets()).isTrue();
+        assertThat(comparison.hasToolGap()).isFalse();
+        assertThat(comparison.shared()).containsExactlyInAnyOrder("bash", "read");
     }
 
     @Test
@@ -63,7 +78,7 @@ class ToolUsageComparisonTest {
         ToolUsageComparison comparison = ToolUsageComparison.from(miniAgent, claudeCode);
 
         assertThat(comparison.hasToolGap()).isTrue();
-        assertThat(comparison.claudeOnly()).containsExactly("TodoWrite");
+        assertThat(comparison.claudeOnly()).containsExactly("todowrite"); // lowercase
     }
 
     @Test
@@ -160,7 +175,7 @@ class ToolUsageComparisonTest {
 
         assertThat(formatted).contains("TOOL GAP");
         assertThat(formatted).contains("Onboarding candidates");
-        assertThat(formatted).contains("TodoWrite");
+        assertThat(formatted).contains("todowrite"); // lowercase due to normalization
     }
 
     @Test
@@ -186,7 +201,7 @@ class ToolUsageComparisonTest {
         ToolUsageComparison comparison = ToolUsageComparison.from(miniAgent, claudeCode);
 
         assertThat(comparison.miniAgentTools()).isEmpty();
-        assertThat(comparison.claudeCodeTools()).containsExactly("Read");
+        assertThat(comparison.claudeCodeTools()).containsExactly("read"); // lowercase
         assertThat(comparison.hasToolGap()).isTrue();
     }
 
