@@ -53,6 +53,14 @@ public record ComparisonReport(
     }
 
     /**
+     * Gets behavioral pattern analysis.
+     * This identifies patterns like end verification, planning, etc.
+     */
+    public BehavioralPatternAnalyzer.BehavioralAnalysis behavioralAnalysis() {
+        return new BehavioralPatternAnalyzer().analyze(this);
+    }
+
+    /**
      * Returns true if both agents succeeded.
      */
     public boolean bothPassed() {
@@ -222,6 +230,10 @@ public record ComparisonReport(
 
         // Tool usage Venn diagram
         sb.append(toolUsageComparison().format());
+        sb.append("\n");
+
+        // Behavioral pattern analysis
+        sb.append(behavioralAnalysis().format());
 
         sb.append("\n═══════════════════════════════════════════════════════════════\n");
         return sb.toString();

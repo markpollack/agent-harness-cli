@@ -27,24 +27,24 @@ import java.nio.file.Path;
 import java.util.stream.Stream;
 
 /**
- * Parameterized comparison tests for bootstrap use cases.
+ * Parameterized comparison tests for intermediate use cases.
  *
- * <p>Runs MiniAgent vs Claude Code for each bootstrap test and validates both succeed.
- * Test results include timing from Surefire reports.</p>
+ * <p>Runs MiniAgent vs Claude Code for each intermediate test and validates both succeed.
+ * Also captures behavioral patterns (verification, planning) for analysis.</p>
  *
  * <p>Generates a summary report in plans/learnings/ after all tests complete.</p>
  *
- * <p>Run with: {@code ./mvnw verify -pl harness-test -Dit.test=BootstrapComparisonIT}</p>
+ * <p>Run with: {@code ./mvnw verify -pl harness-test -Dit.test=IntermediateComparisonIT}</p>
  *
- * <p>Run single test: {@code ./mvnw verify -pl harness-test -Dit.test="BootstrapComparisonIT#compareAgents[01-echo-hello]"}</p>
+ * <p>Run single test: {@code ./mvnw verify -pl harness-test -Dit.test="IntermediateComparisonIT#compareAgents[11-create-java-class]"}</p>
  */
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
-class BootstrapComparisonIT extends AbstractComparisonIT {
+class IntermediateComparisonIT extends AbstractComparisonIT {
 
-    private static final String SUITE_NAME = "Bootstrap";
-    private static final Path BOOTSTRAP_DIR = USE_CASES_DIR.resolve("bootstrap");
-    private static final int MAX_TURNS = 10;
-    private static final int TIMEOUT_SECONDS = 120;
+    private static final String SUITE_NAME = "Intermediate";
+    private static final Path INTERMEDIATE_DIR = USE_CASES_DIR.resolve("intermediate");
+    private static final int MAX_TURNS = 15;  // Intermediate tests may need more turns
+    private static final int TIMEOUT_SECONDS = 180;  // Longer timeout
 
     @BeforeAll
     static void setUp() {
@@ -56,14 +56,14 @@ class BootstrapComparisonIT extends AbstractComparisonIT {
         generateAndSaveSummary(SUITE_NAME, LEARNINGS_DIR);
     }
 
-    static Stream<String> bootstrapUseCases() throws Exception {
-        return findUseCases(BOOTSTRAP_DIR);
+    static Stream<String> intermediateUseCases() throws Exception {
+        return findUseCases(INTERMEDIATE_DIR);
     }
 
     @ParameterizedTest(name = "{0}")
-    @MethodSource("bootstrapUseCases")
-    @DisplayName("Compare MiniAgent vs Claude Code")
+    @MethodSource("intermediateUseCases")
+    @DisplayName("Compare MiniAgent vs Claude Code (Intermediate)")
     void compareAgents(String useCaseName) throws Exception {
-        runComparison(useCaseName, BOOTSTRAP_DIR);
+        runComparison(useCaseName, INTERMEDIATE_DIR);
     }
 }
