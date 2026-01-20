@@ -16,9 +16,9 @@
 
 package org.springaicommunity.agents.harness.test.validation;
 
-import org.springaicommunity.agents.judge.jury.Verdict;
-import org.springaicommunity.agents.judge.result.Judgment;
-import org.springaicommunity.agents.judge.result.JudgmentStatus;
+import org.springaicommunity.judge.jury.Verdict;
+import org.springaicommunity.judge.result.Judgment;
+import org.springaicommunity.judge.result.JudgmentStatus;
 
 import java.util.ArrayList;
 import java.util.List;

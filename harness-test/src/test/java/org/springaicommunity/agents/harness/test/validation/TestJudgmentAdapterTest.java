@@ -18,8 +18,8 @@ package org.springaicommunity.agents.harness.test.validation;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springaicommunity.agents.judge.jury.Verdict;
-import org.springaicommunity.agents.judge.result.Judgment;
+import org.springaicommunity.judge.jury.Verdict;
+import org.springaicommunity.judge.result.Judgment;
 
 import java.util.List;
 import java.util.Map;

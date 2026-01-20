@@ -21,12 +21,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springaicommunity.agents.harness.test.usecase.SuccessCriterion;
 import org.springaicommunity.agents.harness.test.usecase.UseCase;
-import org.springaicommunity.agents.judge.Judge;
-import org.springaicommunity.agents.judge.context.AgentExecutionStatus;
-import org.springaicommunity.agents.judge.context.JudgmentContext;
-import org.springaicommunity.agents.judge.jury.Jury;
-import org.springaicommunity.agents.judge.jury.Verdict;
-import org.springaicommunity.agents.judge.result.Judgment;
+import org.springaicommunity.judge.Judge;
+import org.springaicommunity.judge.context.ExecutionStatus;
+import org.springaicommunity.judge.context.JudgmentContext;
+import org.springaicommunity.judge.jury.Jury;
+import org.springaicommunity.judge.jury.Verdict;
+import org.springaicommunity.judge.result.Judgment;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -195,7 +195,7 @@ class JuryFactoryTest {
                 .executionTime(Duration.ofSeconds(1))
                 .startedAt(Instant.now())
                 .agentOutput(output)
-                .status(AgentExecutionStatus.SUCCESS)
+                .status(ExecutionStatus.SUCCESS)
                 .build();
     }
 

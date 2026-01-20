@@ -31,6 +31,7 @@ import java.util.List;
  *   <li>Test design issues (both fail/pass in similar ways)</li>
  *   <li>Agent capability gaps (one succeeds, one fails)</li>
  *   <li>Different approaches (both succeed, different tool sequences)</li>
+ *   <li><b>Tool gaps</b> (Claude uses tools MiniAgent lacks - onboarding candidates)</li>
  * </ul>
  *
  * @param useCase the use case that was tested
@@ -42,6 +43,14 @@ public record ComparisonReport(
     ExecutionSummary miniAgent,
     ExecutionSummary claudeCode
 ) {
+
+    /**
+     * Gets the tool usage Venn diagram comparison.
+     * This identifies shared tools, exclusive tools, and onboarding candidates.
+     */
+    public ToolUsageComparison toolUsageComparison() {
+        return ToolUsageComparison.from(miniAgent, claudeCode);
+    }
 
     /**
      * Returns true if both agents succeeded.
@@ -111,6 +120,13 @@ public record ComparisonReport(
                 differences.add(String.format("First tool differs: MiniAgent=%s, ClaudeCode=%s",
                     miniSequence.get(0), claudeSequence.get(0)));
             }
+        }
+
+        // Tool gap analysis (Venn diagram)
+        ToolUsageComparison toolComparison = toolUsageComparison();
+        if (toolComparison.hasToolGap()) {
+            differences.add("TOOL GAP: Claude used tools MiniAgent lacks: " +
+                String.join(", ", toolComparison.claudeOnly()));
         }
 
         return differences;
@@ -202,6 +218,10 @@ public record ComparisonReport(
         } else {
             sb.append(String.join(" → ", claudeCode.toolSequence())).append("\n");
         }
+        sb.append("\n");
+
+        // Tool usage Venn diagram
+        sb.append(toolUsageComparison().format());
 
         sb.append("\n═══════════════════════════════════════════════════════════════\n");
         return sb.toString();

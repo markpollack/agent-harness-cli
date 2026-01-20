@@ -1,7 +1,10 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 //DEPS org.springaicommunity.agents:harness-test:0.1.0-SNAPSHOT
+//DEPS org.springaicommunity.agents:harness-agents:0.1.0-SNAPSHOT
 //DEPS org.springaicommunity:claude-code-sdk:1.0.0-SNAPSHOT
-//REPOS mavenlocal,mavencentral
+//DEPS org.springaicommunity:agent-judge-llm:0.9.0-SNAPSHOT
+//DEPS org.springframework.ai:spring-ai-anthropic:2.0.0-SNAPSHOT
+//REPOS mavenlocal,mavencentral,spring-milestones=https://repo.spring.io/milestone,spring-snapshots=https://repo.spring.io/snapshot
 //JAVA 21
 
 /*
@@ -25,9 +28,18 @@ import org.springaicommunity.agents.harness.test.TestHarnessConfig;
 import org.springaicommunity.agents.harness.test.TestResult;
 import org.springaicommunity.agents.harness.test.comparison.ComparisonReport;
 import org.springaicommunity.agents.harness.test.comparison.ComparisonRunner;
+import org.springaicommunity.agents.harness.test.executor.CliExecutor;
 import org.springaicommunity.agents.harness.test.executor.DefaultCliExecutor;
+import org.springaicommunity.agents.harness.test.executor.InProcessExecutor;
+import org.springaicommunity.agents.harness.test.executor.ToolCallRecord;
 import org.springaicommunity.agents.harness.test.usecase.UseCase;
 import org.springaicommunity.agents.harness.test.usecase.UseCaseLoader;
+import org.springaicommunity.agents.harness.test.validation.JuryFactory;
+import org.springframework.ai.anthropic.AnthropicChatModel;
+import org.springframework.ai.anthropic.AnthropicChatOptions;
+import org.springframework.ai.anthropic.api.AnthropicApi;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatModel;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -51,6 +63,13 @@ public class RunAITest {
     private static final Path USE_CASES_DIR = Path.of("use-cases");
     private static final Path LOGS_DIR = Path.of("logs");
     private static final Path CLI_JAR = Path.of("../../cli-app/target/cli-app-0.1.0-SNAPSHOT.jar");
+    private static final int DEFAULT_MAX_TURNS = 10;
+
+    // Cached executor for reuse across tests
+    private static CliExecutor cachedExecutor;
+
+    // Cached ChatClient.Builder for LLM judge (uses Opus 4.5)
+    private static ChatClient.Builder judgeChatClientBuilder;
 
     public static void main(String... args) throws Exception {
         if (args.length == 0 || args[0].equals("--help") || args[0].equals("-h")) {
@@ -65,7 +84,7 @@ public class RunAITest {
         } else if (args[0].equals("--category") && args.length > 1) {
             runCategory(harness, args[1]);
         } else if (args[0].equals("--compare") && args.length > 1) {
-            runComparison(harness.config(), args[1]);
+            runComparison(createConfig(), args[1]);
         } else if (args[0].equals("--list")) {
             listUseCases();
         } else {
@@ -74,11 +93,61 @@ public class RunAITest {
     }
 
     private static TestHarness createHarness() {
+        TestHarnessConfig config = createConfig();
+        CliExecutor executor = getOrCreateExecutor();
+
+        // Create JuryFactory with LLM judge if API key is available
+        JuryFactory juryFactory = createJuryFactory();
+
+        return TestHarness.builder()
+                .config(config)
+                .executor(executor)
+                .juryFactory(juryFactory)
+                .build();
+    }
+
+    private static JuryFactory createJuryFactory() {
+        String apiKey = System.getenv("ANTHROPIC_API_KEY");
+        if (apiKey == null || apiKey.isBlank()) {
+            System.err.println("LLM Judge disabled (no ANTHROPIC_API_KEY)");
+            return new JuryFactory(); // Deterministic judges only
+        }
+
+        if (judgeChatClientBuilder == null) {
+            judgeChatClientBuilder = createJudgeChatClientBuilder(apiKey);
+            System.out.println("LLM Judge enabled (Claude Opus 4.5 for expectedBehavior evaluation)");
+        }
+
+        return new JuryFactory(judgeChatClientBuilder);
+    }
+
+    private static ChatClient.Builder createJudgeChatClientBuilder(String apiKey) {
+        AnthropicApi api = AnthropicApi.builder()
+                .apiKey(apiKey)
+                .build();
+
+        // Use Opus 4.5 for the judge - a stronger model for evaluation
+        // Large token limit to allow complete, accurate evaluation
+        // Future: Consider adding thinking mode for more detailed reasoning
+        AnthropicChatOptions options = AnthropicChatOptions.builder()
+                .model("claude-opus-4-5")
+                .maxTokens(8192)
+                .build();
+
+        ChatModel chatModel = AnthropicChatModel.builder()
+                .anthropicApi(api)
+                .defaultOptions(options)
+                .build();
+
+        return ChatClient.builder(chatModel);
+    }
+
+    private static TestHarnessConfig createConfig() {
         List<String> command = List.of(
                 "java", "-jar", CLI_JAR.toAbsolutePath().toString(), "--linear"
         );
 
-        TestHarnessConfig config = TestHarnessConfig.builder()
+        return TestHarnessConfig.builder()
                 .cliCommand(command)
                 .useCasesDir(USE_CASES_DIR)
                 .transcriptsDir(LOGS_DIR)
@@ -86,11 +155,42 @@ public class RunAITest {
                 .cleanupWorkspaces(true)
                 .defaultTimeoutSeconds(120)
                 .build();
+    }
 
-        return TestHarness.builder()
-                .config(config)
-                .executor(new DefaultCliExecutor())
+    private static CliExecutor getOrCreateExecutor() {
+        if (cachedExecutor != null) {
+            return cachedExecutor;
+        }
+
+        String apiKey = System.getenv("ANTHROPIC_API_KEY");
+        if (apiKey == null || apiKey.isBlank()) {
+            System.err.println("WARNING: ANTHROPIC_API_KEY not set. Falling back to subprocess execution.");
+            System.err.println("         Set ANTHROPIC_API_KEY for in-process MiniAgent execution with tool call capture.");
+            cachedExecutor = new DefaultCliExecutor();
+            return cachedExecutor;
+        }
+
+        System.out.println("Using InProcessExecutor with Anthropic API (structured tool call capture enabled)");
+        cachedExecutor = createInProcessExecutor(apiKey);
+        return cachedExecutor;
+    }
+
+    private static InProcessExecutor createInProcessExecutor(String apiKey) {
+        AnthropicApi api = AnthropicApi.builder()
+                .apiKey(apiKey)
                 .build();
+
+        AnthropicChatOptions options = AnthropicChatOptions.builder()
+                .model("claude-sonnet-4-5")
+                .maxTokens(4096)
+                .build();
+
+        ChatModel chatModel = AnthropicChatModel.builder()
+                .anthropicApi(api)
+                .defaultOptions(options)
+                .build();
+
+        return new InProcessExecutor(chatModel, DEFAULT_MAX_TURNS);
     }
 
     private static void runSingle(TestHarness harness, String useCasePath) throws Exception {
@@ -156,7 +256,8 @@ public class RunAITest {
         UseCaseLoader loader = new UseCaseLoader();
         UseCase useCase = loader.load(yamlPath);
 
-        ComparisonRunner runner = new ComparisonRunner(config);
+        CliExecutor executor = getOrCreateExecutor();
+        ComparisonRunner runner = new ComparisonRunner(config, executor);
         ComparisonReport report = runner.compare(useCase);
 
         System.out.println(report.format());

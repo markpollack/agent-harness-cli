@@ -28,10 +28,10 @@ import org.springaicommunity.agents.harness.test.validation.TestJudgmentAdapter;
 import org.springaicommunity.agents.harness.test.validation.TestJudgmentAdapter.ValidationResult;
 import org.springaicommunity.agents.harness.test.workspace.WorkspaceContext;
 import org.springaicommunity.agents.harness.test.workspace.WorkspaceManager;
-import org.springaicommunity.agents.judge.context.AgentExecutionStatus;
-import org.springaicommunity.agents.judge.context.JudgmentContext;
-import org.springaicommunity.agents.judge.jury.Jury;
-import org.springaicommunity.agents.judge.jury.Verdict;
+import org.springaicommunity.judge.context.ExecutionStatus;
+import org.springaicommunity.judge.context.JudgmentContext;
+import org.springaicommunity.judge.jury.Jury;
+import org.springaicommunity.judge.jury.Verdict;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -266,7 +266,7 @@ public class TestHarness {
                 .agentOutput(execResult.output())
                 .executionTime(Duration.ofMillis(execResult.durationMs()))
                 .startedAt(Instant.now().minusMillis(execResult.durationMs()))
-                .status(execResult.isSuccess() ? AgentExecutionStatus.SUCCESS : AgentExecutionStatus.FAILED)
+                .status(execResult.isSuccess() ? ExecutionStatus.SUCCESS : ExecutionStatus.FAILED)
                 .build();
 
         Verdict verdict = jury.vote(context);

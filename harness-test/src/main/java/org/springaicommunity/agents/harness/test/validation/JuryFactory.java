@@ -20,13 +20,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springaicommunity.agents.harness.test.usecase.SuccessCriterion;
 import org.springaicommunity.agents.harness.test.usecase.UseCase;
-import org.springaicommunity.agents.judge.Judge;
-import org.springaicommunity.agents.judge.fs.FileContentJudge;
-import org.springaicommunity.agents.judge.fs.FileExistsJudge;
-import org.springaicommunity.agents.judge.jury.Jury;
-import org.springaicommunity.agents.judge.jury.SimpleJury;
-import org.springaicommunity.agents.judge.jury.WeightedAverageStrategy;
-import org.springaicommunity.agents.judge.result.Judgment;
+import org.springaicommunity.judge.Judge;
+import org.springaicommunity.judge.fs.FileContentJudge;
+import org.springaicommunity.judge.fs.FileExistsJudge;
+import org.springaicommunity.judge.jury.Jury;
+import org.springaicommunity.judge.jury.SimpleJury;
+import org.springaicommunity.judge.jury.WeightedAverageStrategy;
+import org.springaicommunity.judge.result.Judgment;
+import org.springframework.ai.chat.client.ChatClient;
 
 import java.nio.file.Path;
 import java.util.regex.Pattern;
@@ -41,16 +42,38 @@ import java.util.regex.Pattern;
  *   <li>{@code no_exceptions} → Custom exception detection judge</li>
  *   <li>{@code output_contains} → Custom output pattern judge</li>
  * </ul>
+ *
+ * <p>When a ChatClient.Builder is provided and the UseCase has an expectedBehavior
+ * field, an LLM-powered ExpectedBehaviorJudge is added with 60% weight, while
+ * deterministic judges share the remaining 40%.
  */
 public class JuryFactory {
 
     private static final Logger logger = LoggerFactory.getLogger(JuryFactory.class);
 
+    /** Weight for LLM judge when expectedBehavior is defined */
+    private static final double LLM_JUDGE_WEIGHT = 0.6;
+
+    /** Weight multiplier for deterministic judges when LLM judge is present */
+    private static final double DETERMINISTIC_WEIGHT_MULTIPLIER = 0.4;
+
+    private final ChatClient.Builder chatClientBuilder;
+
     /**
-     * Create factory for building deterministic judges.
-     * LLM-based judges can be added in the future.
+     * Create factory for building deterministic judges only.
+     * No LLM-based evaluation will be performed.
      */
     public JuryFactory() {
+        this(null);
+    }
+
+    /**
+     * Create factory with ChatClient for LLM-based judges.
+     *
+     * @param chatClientBuilder the chat client builder for LLM judges (null for deterministic only)
+     */
+    public JuryFactory(ChatClient.Builder chatClientBuilder) {
+        this.chatClientBuilder = chatClientBuilder;
     }
 
     /**
@@ -64,23 +87,35 @@ public class JuryFactory {
         SimpleJury.Builder juryBuilder = SimpleJury.builder()
                 .votingStrategy(new WeightedAverageStrategy());
 
+        // Check if LLM judge will be added
+        boolean hasExpectedBehavior = useCase.expectedBehavior() != null && !useCase.expectedBehavior().isBlank();
+        boolean addLlmJudge = hasExpectedBehavior && chatClientBuilder != null;
+
+        // Determine weight multiplier for deterministic judges
+        double weightMultiplier = addLlmJudge ? DETERMINISTIC_WEIGHT_MULTIPLIER : 1.0;
+
         // Add deterministic judges from success criteria
         for (SuccessCriterion criterion : useCase.successCriteria()) {
             Judge judge = createJudge(criterion, workspacePath);
             if (judge != null) {
-                double weight = calculateWeight(criterion);
+                double weight = calculateWeight(criterion) * weightMultiplier;
                 juryBuilder.judge(judge, weight);
                 logger.debug("Added judge for criterion: {} with weight {}", criterion.type(), weight);
             }
         }
 
-        // Future: Add LLM judge for expectedBehavior
-        if (useCase.expectedBehavior() != null && !useCase.expectedBehavior().isBlank()) {
-            logger.debug("Expected behavior defined but LLM validation not yet implemented");
+        // Add LLM judge for expectedBehavior if ChatClient is available
+        if (addLlmJudge) {
+            ExpectedBehaviorJudge llmJudge = new ExpectedBehaviorJudge(
+                    useCase.expectedBehavior(), chatClientBuilder);
+            juryBuilder.judge(llmJudge, LLM_JUDGE_WEIGHT);
+            logger.debug("Added LLM ExpectedBehaviorJudge with weight {}", LLM_JUDGE_WEIGHT);
+        } else if (hasExpectedBehavior) {
+            logger.warn("Expected behavior defined but no ChatClient.Builder provided - skipping LLM judge");
         }
 
         // Ensure at least one judge
-        if (useCase.successCriteria().isEmpty()) {
+        if (useCase.successCriteria().isEmpty() && !addLlmJudge) {
             logger.debug("No success criteria, adding default success judge");
             juryBuilder.judge(ctx -> Judgment.pass("No specific criteria defined"), 1.0);
         }
