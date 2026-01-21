@@ -1,0 +1,255 @@
+# Advanced Test: Implement Feature from Specification
+# Inspired by terminal-bench software-engineering tasks
+# Difficulty: hard, Expert Time: ~15 min
+name: Implement Feature from Specification
+category: advanced
+difficulty: hard
+requiresApi: true
+maxTurns: 25
+timeoutSeconds: 900
+
+setup:
+  files:
+    - path: "SPEC.md"
+      content: |
+        # Cache Specification
+
+        ## Overview
+        Implement an LRU (Least Recently Used) cache to reduce database calls.
+
+        ## Requirements
+
+        ### Cache Class
+        - Generic types: `Cache<K, V>`
+        - Constructor takes max capacity
+        - Methods:
+          - `V get(K key)` - returns null if not found, updates access time
+          - `void put(K key, V value)` - evicts LRU entry if at capacity
+          - `void invalidate(K key)` - removes entry
+          - `void clear()` - removes all entries
+          - `int size()` - current number of entries
+
+        ### Eviction Policy
+        - When cache is full and new entry added, remove least recently accessed entry
+        - Both get() and put() count as "access"
+
+        ### Thread Safety
+        - Not required for this implementation (single-threaded use)
+
+        ### Integration
+        - DataService should use cache for getData() method
+        - Cache key: the id parameter
+        - Cache should have capacity of 100
+    - path: "src/DataService.java"
+      content: |
+        import java.util.HashMap;
+        import java.util.Map;
+
+        public class DataService {
+            // Simulates database
+            private Map<String, String> database = new HashMap<>();
+            private int dbCallCount = 0;
+
+            public DataService() {
+                // Pre-populate some data
+                database.put("user1", "Alice");
+                database.put("user2", "Bob");
+                database.put("user3", "Charlie");
+            }
+
+            // TODO: Add caching to this method
+            public String getData(String id) {
+                dbCallCount++;
+                return database.get(id);
+            }
+
+            public void setData(String id, String value) {
+                database.put(id, value);
+                // TODO: Invalidate cache when data changes
+            }
+
+            public int getDbCallCount() {
+                return dbCallCount;
+            }
+
+            public void resetDbCallCount() {
+                dbCallCount = 0;
+            }
+        }
+    - path: "test/CacheTest.java"
+      content: |
+        public class CacheTest {
+            private static int passed = 0;
+            private static int failed = 0;
+
+            public static void main(String[] args) {
+                testCacheBasicOperations();
+                testCacheEviction();
+                testCacheInvalidate();
+                testDataServiceCaching();
+                testDataServiceCacheInvalidation();
+
+                System.out.println("\nResults: " + passed + " passed, " + failed + " failed");
+                if (failed > 0) {
+                    System.exit(1);
+                }
+            }
+
+            static void testCacheBasicOperations() {
+                try {
+                    Cache<String, Integer> cache = new Cache<>(3);
+
+                    cache.put("a", 1);
+                    cache.put("b", 2);
+                    cache.put("c", 3);
+
+                    assertEquals(Integer.valueOf(1), cache.get("a"), "testCacheBasicOperations: get a");
+                    assertEquals(Integer.valueOf(2), cache.get("b"), "testCacheBasicOperations: get b");
+                    assertEquals(3, cache.size(), "testCacheBasicOperations: size");
+                    pass("testCacheBasicOperations");
+                } catch (Exception e) {
+                    fail("testCacheBasicOperations", e);
+                }
+            }
+
+            static void testCacheEviction() {
+                try {
+                    Cache<String, Integer> cache = new Cache<>(2);
+
+                    cache.put("a", 1);
+                    cache.put("b", 2);
+                    cache.get("a"); // Access 'a' to make it recently used
+                    cache.put("c", 3); // Should evict 'b' (least recently used)
+
+                    assertEquals(Integer.valueOf(1), cache.get("a"), "testCacheEviction: get a");
+                    assertNull(cache.get("b"), "testCacheEviction: b should be evicted");
+                    assertEquals(Integer.valueOf(3), cache.get("c"), "testCacheEviction: get c");
+                    pass("testCacheEviction");
+                } catch (Exception e) {
+                    fail("testCacheEviction", e);
+                }
+            }
+
+            static void testCacheInvalidate() {
+                try {
+                    Cache<String, Integer> cache = new Cache<>(3);
+
+                    cache.put("a", 1);
+                    cache.put("b", 2);
+
+                    cache.invalidate("a");
+
+                    assertNull(cache.get("a"), "testCacheInvalidate: a should be null");
+                    assertEquals(Integer.valueOf(2), cache.get("b"), "testCacheInvalidate: get b");
+                    assertEquals(1, cache.size(), "testCacheInvalidate: size");
+                    pass("testCacheInvalidate");
+                } catch (Exception e) {
+                    fail("testCacheInvalidate", e);
+                }
+            }
+
+            static void testDataServiceCaching() {
+                try {
+                    DataService service = new DataService();
+
+                    // First call should hit database
+                    String result1 = service.getData("user1");
+                    assertEquals("Alice", result1, "testDataServiceCaching: first call");
+                    assertEquals(1, service.getDbCallCount(), "testDataServiceCaching: dbCallCount after first");
+
+                    // Second call should use cache
+                    String result2 = service.getData("user1");
+                    assertEquals("Alice", result2, "testDataServiceCaching: second call");
+                    assertEquals(1, service.getDbCallCount(), "testDataServiceCaching: dbCallCount should still be 1");
+
+                    // Different key should hit database
+                    String result3 = service.getData("user2");
+                    assertEquals("Bob", result3, "testDataServiceCaching: third call");
+                    assertEquals(2, service.getDbCallCount(), "testDataServiceCaching: dbCallCount after third");
+                    pass("testDataServiceCaching");
+                } catch (Exception e) {
+                    fail("testDataServiceCaching", e);
+                }
+            }
+
+            static void testDataServiceCacheInvalidation() {
+                try {
+                    DataService service = new DataService();
+
+                    // Load into cache
+                    service.getData("user1");
+                    assertEquals(1, service.getDbCallCount(), "testDataServiceCacheInvalidation: initial");
+
+                    // Update data (should invalidate cache)
+                    service.setData("user1", "Alice Updated");
+
+                    // Should hit database again
+                    String result = service.getData("user1");
+                    assertEquals("Alice Updated", result, "testDataServiceCacheInvalidation: updated value");
+                    assertEquals(2, service.getDbCallCount(), "testDataServiceCacheInvalidation: dbCallCount after update");
+                    pass("testDataServiceCacheInvalidation");
+                } catch (Exception e) {
+                    fail("testDataServiceCacheInvalidation", e);
+                }
+            }
+
+            // Helper methods
+            static void assertEquals(Object expected, Object actual, String msg) {
+                if (expected == null && actual == null) return;
+                if (expected == null || !expected.equals(actual)) {
+                    throw new AssertionError(msg + ": expected <" + expected + "> but was <" + actual + ">");
+                }
+            }
+
+            static void assertEquals(int expected, int actual, String msg) {
+                if (expected != actual) {
+                    throw new AssertionError(msg + ": expected <" + expected + "> but was <" + actual + ">");
+                }
+            }
+
+            static void assertNull(Object obj, String msg) {
+                if (obj != null) {
+                    throw new AssertionError(msg + ": expected null but was <" + obj + ">");
+                }
+            }
+
+            static void pass(String testName) {
+                System.out.println("PASS: " + testName);
+                passed++;
+            }
+
+            static void fail(String testName, Exception e) {
+                System.out.println("FAIL: " + testName + " - " + e.getMessage());
+                failed++;
+            }
+        }
+
+prompt: |
+  Implement a caching layer according to the specification in SPEC.md.
+
+  The workspace contains:
+  - SPEC.md - Feature requirements
+  - src/DataService.java - Service that needs caching
+  - test/CacheTest.java - Tests that must pass
+
+  Requirements:
+  1. Read and understand SPEC.md completely
+  2. Create src/Cache.java implementing the LRU cache
+  3. Integrate cache into DataService.java
+  4. All tests must pass: javac src/*.java test/*.java && java -cp .:src:test CacheTest
+
+expectedBehavior: |
+  Agent should:
+  - Create Cache.java with LRU eviction
+  - Cache is generic with get, put, invalidate, clear, size methods
+  - DataService uses cache for getData()
+  - DataService invalidates cache on setData()
+  - All 5 tests pass
+
+successCriteria:
+  - type: file_exists
+    args: ["src/Cache.java"]
+  - type: file_contains
+    args: ["src/DataService.java", "Cache"]
+  - type: command_succeeds
+    args: ["javac src/*.java test/*.java && java -cp .:src:test CacheTest"]

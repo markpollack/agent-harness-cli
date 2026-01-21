@@ -1,0 +1,313 @@
+# Advanced Test: Configuration Parser Fix
+# Inspired by terminal-bench system-administration tasks
+# Difficulty: medium, Expert Time: ~7 min
+name: Fix Configuration Parser
+category: advanced
+difficulty: medium
+requiresApi: true
+maxTurns: 25
+timeoutSeconds: 600
+
+setup:
+  files:
+    - path: "src/ConfigValue.java"
+      content: |
+        public class ConfigValue {
+            private final String key;
+            private final String value;
+
+            public ConfigValue(String key, String value) {
+                this.key = key;
+                this.value = value;
+            }
+
+            public String getKey() { return key; }
+            public String getValue() { return value; }
+
+            @Override
+            public String toString() {
+                return key + "=" + value;
+            }
+        }
+    - path: "src/ConfigParser.java"
+      content: |
+        import java.util.*;
+
+        /**
+         * Parses configuration files in key=value format.
+         *
+         * Format:
+         * - Lines starting with # are comments
+         * - Empty lines are ignored
+         * - key=value pairs (whitespace around = is trimmed)
+         * - Values can be quoted with " to preserve spaces
+         * - Keys cannot contain = or whitespace
+         *
+         * BUGS: This parser has several bugs to fix
+         */
+        public class ConfigParser {
+
+            /**
+             * Parses configuration content and returns key-value pairs.
+             */
+            public Map<String, ConfigValue> parse(String content) {
+                Map<String, ConfigValue> config = new HashMap<>();
+
+                if (content == null) {
+                    return config;
+                }
+
+                String[] lines = content.split("\n");
+
+                for (String line : lines) {
+                    // BUG 1: Doesn't trim line before checking
+                    if (line.startsWith("#")) {
+                        continue; // Comment
+                    }
+
+                    // BUG 2: Doesn't handle empty lines properly
+                    if (line.length() == 0) {
+                        continue;
+                    }
+
+                    // BUG 3: Doesn't handle lines without =
+                    int eqIndex = line.indexOf("=");
+                    String key = line.substring(0, eqIndex).trim();
+                    String value = line.substring(eqIndex + 1);
+
+                    // BUG 4: Doesn't handle quoted values correctly
+                    if (value.startsWith("\"")) {
+                        value = value.substring(1);
+                    }
+
+                    config.put(key, new ConfigValue(key, value));
+                }
+
+                return config;
+            }
+
+            /**
+             * Gets a specific value from parsed config.
+             */
+            public String getValue(Map<String, ConfigValue> config, String key, String defaultValue) {
+                ConfigValue cv = config.get(key);
+                // BUG 5: Doesn't handle null properly
+                return cv.getValue();
+            }
+        }
+    - path: "test/ConfigParserTest.java"
+      content: |
+        import java.util.Map;
+
+        public class ConfigParserTest {
+            private static ConfigParser parser = new ConfigParser();
+            private static int passed = 0;
+            private static int failed = 0;
+
+            public static void main(String[] args) {
+                testSimpleParsing();
+                testCommentsIgnored();
+                testEmptyLinesIgnored();
+                testWhitespaceTrimmed();
+                testQuotedValues();
+                testNullContent();
+                testLineWithoutEquals();
+                testGetValueWithDefault();
+                testEmptyValue();
+                testValueWithEquals();
+
+                System.out.println("\nResults: " + passed + " passed, " + failed + " failed");
+                if (failed > 0) {
+                    System.exit(1);
+                }
+            }
+
+            static void testSimpleParsing() {
+                try {
+                    String content = "key1=value1\nkey2=value2";
+                    Map<String, ConfigValue> config = parser.parse(content);
+                    assertEquals(2, config.size(), "testSimpleParsing: size");
+                    assertEquals("value1", config.get("key1").getValue(), "testSimpleParsing: key1");
+                    assertEquals("value2", config.get("key2").getValue(), "testSimpleParsing: key2");
+                    pass("testSimpleParsing");
+                } catch (Exception e) {
+                    fail("testSimpleParsing", e);
+                }
+            }
+
+            static void testCommentsIgnored() {
+                try {
+                    String content = "# This is a comment\nkey=value\n# Another comment";
+                    Map<String, ConfigValue> config = parser.parse(content);
+                    assertEquals(1, config.size(), "testCommentsIgnored: size");
+                    assertEquals("value", config.get("key").getValue(), "testCommentsIgnored: value");
+                    pass("testCommentsIgnored");
+                } catch (Exception e) {
+                    fail("testCommentsIgnored", e);
+                }
+            }
+
+            static void testEmptyLinesIgnored() {
+                try {
+                    String content = "key1=value1\n\nkey2=value2\n\n";
+                    Map<String, ConfigValue> config = parser.parse(content);
+                    assertEquals(2, config.size(), "testEmptyLinesIgnored: size");
+                    pass("testEmptyLinesIgnored");
+                } catch (Exception e) {
+                    fail("testEmptyLinesIgnored", e);
+                }
+            }
+
+            static void testWhitespaceTrimmed() {
+                try {
+                    String content = "  key1  =  value1  \n  # comment\n  key2=value2";
+                    Map<String, ConfigValue> config = parser.parse(content);
+                    assertEquals(2, config.size(), "testWhitespaceTrimmed: size");
+                    assertEquals("value1", config.get("key1").getValue(), "testWhitespaceTrimmed: value1");
+                    pass("testWhitespaceTrimmed");
+                } catch (Exception e) {
+                    fail("testWhitespaceTrimmed", e);
+                }
+            }
+
+            static void testQuotedValues() {
+                try {
+                    String content = "message=\"Hello World\"\npath=\"/path/with spaces/file\"";
+                    Map<String, ConfigValue> config = parser.parse(content);
+                    assertEquals("Hello World", config.get("message").getValue(), "testQuotedValues: message");
+                    assertEquals("/path/with spaces/file", config.get("path").getValue(), "testQuotedValues: path");
+                    pass("testQuotedValues");
+                } catch (Exception e) {
+                    fail("testQuotedValues", e);
+                }
+            }
+
+            static void testNullContent() {
+                try {
+                    Map<String, ConfigValue> config = parser.parse(null);
+                    assertNotNull(config, "testNullContent: config");
+                    assertTrue(config.isEmpty(), "testNullContent: isEmpty");
+                    pass("testNullContent");
+                } catch (Exception e) {
+                    fail("testNullContent", e);
+                }
+            }
+
+            static void testLineWithoutEquals() {
+                try {
+                    String content = "key1=value1\ninvalid line\nkey2=value2";
+                    Map<String, ConfigValue> config = parser.parse(content);
+                    assertEquals(2, config.size(), "testLineWithoutEquals: size");
+                    assertNull(config.get("invalid line"), "testLineWithoutEquals: no invalid key");
+                    pass("testLineWithoutEquals");
+                } catch (Exception e) {
+                    fail("testLineWithoutEquals", e);
+                }
+            }
+
+            static void testGetValueWithDefault() {
+                try {
+                    String content = "existing=found";
+                    Map<String, ConfigValue> config = parser.parse(content);
+                    assertEquals("found", parser.getValue(config, "existing", "default"), "testGetValueWithDefault: existing");
+                    assertEquals("default", parser.getValue(config, "missing", "default"), "testGetValueWithDefault: missing");
+                    pass("testGetValueWithDefault");
+                } catch (Exception e) {
+                    fail("testGetValueWithDefault", e);
+                }
+            }
+
+            static void testEmptyValue() {
+                try {
+                    String content = "empty=\nkey=value";
+                    Map<String, ConfigValue> config = parser.parse(content);
+                    assertEquals("", config.get("empty").getValue(), "testEmptyValue: empty");
+                    assertEquals("value", config.get("key").getValue(), "testEmptyValue: key");
+                    pass("testEmptyValue");
+                } catch (Exception e) {
+                    fail("testEmptyValue", e);
+                }
+            }
+
+            static void testValueWithEquals() {
+                try {
+                    String content = "equation=a=b+c";
+                    Map<String, ConfigValue> config = parser.parse(content);
+                    assertEquals("a=b+c", config.get("equation").getValue(), "testValueWithEquals");
+                    pass("testValueWithEquals");
+                } catch (Exception e) {
+                    fail("testValueWithEquals", e);
+                }
+            }
+
+            // Helper methods
+            static void assertEquals(Object expected, Object actual, String msg) {
+                if (!expected.equals(actual)) {
+                    throw new AssertionError(msg + ": expected <" + expected + "> but was <" + actual + ">");
+                }
+            }
+
+            static void assertEquals(int expected, int actual, String msg) {
+                if (expected != actual) {
+                    throw new AssertionError(msg + ": expected <" + expected + "> but was <" + actual + ">");
+                }
+            }
+
+            static void assertNotNull(Object obj, String msg) {
+                if (obj == null) {
+                    throw new AssertionError(msg + ": expected non-null but was null");
+                }
+            }
+
+            static void assertNull(Object obj, String msg) {
+                if (obj != null) {
+                    throw new AssertionError(msg + ": expected null but was <" + obj + ">");
+                }
+            }
+
+            static void assertTrue(boolean condition, String msg) {
+                if (!condition) {
+                    throw new AssertionError(msg + ": expected true but was false");
+                }
+            }
+
+            static void pass(String testName) {
+                System.out.println("PASS: " + testName);
+                passed++;
+            }
+
+            static void fail(String testName, Exception e) {
+                System.out.println("FAIL: " + testName + " - " + e.getMessage());
+                failed++;
+            }
+        }
+
+prompt: |
+  The configuration parser has bugs causing it to fail on certain inputs.
+
+  The workspace contains:
+  - src/ConfigParser.java - Configuration file parser (has bugs)
+  - src/ConfigValue.java - Configuration value holder (complete)
+  - test/ConfigParserTest.java - Tests that should pass
+
+  Requirements:
+  1. Fix all bugs in ConfigParser.java
+  2. Handle: comments (#), empty lines, key=value, quoted values, whitespace
+  3. All tests must pass: javac src/*.java test/*.java && java -cp .:src:test ConfigParserTest
+
+expectedBehavior: |
+  Agent should:
+  - Trim lines before checking for comments
+  - Properly handle empty lines (including whitespace-only)
+  - Handle lines without = (skip them)
+  - Properly handle quoted values (strip both quotes, trim unquoted)
+  - Return default when key not found in getValue
+  - All 10 tests pass
+
+successCriteria:
+  - type: file_contains
+    args: ["src/ConfigParser.java", ".trim()"]
+  - type: file_contains
+    args: ["src/ConfigParser.java", "indexOf(\"=\")"]
+  - type: command_succeeds
+    args: ["javac src/*.java test/*.java && java -cp .:src:test ConfigParserTest"]

@@ -66,7 +66,6 @@ hs_err_pid*
 replay_pid*
 
 ### Planning and Internal Documentation ###
-# Ignore planning docs except learnings (tracked for knowledge retention)
-plans/*
-!plans/learnings/
+# Ignore all planning docs (internal use only)
+plans/
 tests/ai-driver/logs/

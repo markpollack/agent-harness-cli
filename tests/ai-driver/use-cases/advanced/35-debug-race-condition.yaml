@@ -1,0 +1,259 @@
+# Advanced Test: Debug Complex Bug
+# Inspired by terminal-bench software-engineering/debugging tasks
+# Difficulty: hard, Expert Time: ~12 min
+name: Debug Race Condition Bug
+category: advanced
+difficulty: hard
+requiresApi: true
+maxTurns: 25
+timeoutSeconds: 900
+
+setup:
+  files:
+    - path: "src/Counter.java"
+      content: |
+        /**
+         * A counter that should be thread-safe.
+         * BUG: There's a race condition in the increment method.
+         */
+        public class Counter {
+            private int value = 0;
+
+            public int getValue() {
+                return value;
+            }
+
+            /**
+             * Increments the counter and returns the new value.
+             * This method should be thread-safe but has a bug.
+             */
+            public int increment() {
+                int current = value;    // Read
+                value = current + 1;    // Write - RACE CONDITION: another thread may have incremented
+                return value;
+            }
+
+            /**
+             * Adds delta to the counter and returns new value.
+             */
+            public int add(int delta) {
+                int current = value;
+                value = current + delta;
+                return value;
+            }
+
+            /**
+             * Resets counter to zero.
+             */
+            public void reset() {
+                value = 0;
+            }
+
+            /**
+             * Increments only if current value equals expected.
+             * Returns true if successful.
+             */
+            public boolean compareAndIncrement(int expected) {
+                if (value == expected) {
+                    value = expected + 1;
+                    return true;
+                }
+                return false;
+            }
+        }
+    - path: "src/CounterUser.java"
+      content: |
+        import java.util.concurrent.CountDownLatch;
+
+        public class CounterUser {
+            private final Counter counter;
+
+            public CounterUser(Counter counter) {
+                this.counter = counter;
+            }
+
+            /**
+             * Increments counter from multiple threads.
+             * @param numThreads number of threads
+             * @param incrementsPerThread how many times each thread increments
+             * @return final counter value
+             */
+            public int concurrentIncrements(int numThreads, int incrementsPerThread)
+                    throws InterruptedException {
+                CountDownLatch startLatch = new CountDownLatch(1);
+                CountDownLatch doneLatch = new CountDownLatch(numThreads);
+
+                for (int i = 0; i < numThreads; i++) {
+                    new Thread(() -> {
+                        try {
+                            startLatch.await();
+                            for (int j = 0; j < incrementsPerThread; j++) {
+                                counter.increment();
+                            }
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        } finally {
+                            doneLatch.countDown();
+                        }
+                    }).start();
+                }
+
+                startLatch.countDown(); // Start all threads
+                doneLatch.await();      // Wait for completion
+
+                return counter.getValue();
+            }
+        }
+    - path: "test/CounterTest.java"
+      content: |
+        public class CounterTest {
+            private static int passed = 0;
+            private static int failed = 0;
+
+            public static void main(String[] args) throws Exception {
+                testSingleThreadIncrement();
+                testAdd();
+                testReset();
+                testConcurrentIncrements();
+                testCompareAndIncrement();
+
+                System.out.println("\nResults: " + passed + " passed, " + failed + " failed");
+                if (failed > 0) {
+                    System.exit(1);
+                }
+            }
+
+            static void testSingleThreadIncrement() {
+                try {
+                    Counter counter = new Counter();
+
+                    assertEquals(1, counter.increment(), "testSingleThreadIncrement: first");
+                    assertEquals(2, counter.increment(), "testSingleThreadIncrement: second");
+                    assertEquals(3, counter.increment(), "testSingleThreadIncrement: third");
+                    assertEquals(3, counter.getValue(), "testSingleThreadIncrement: value");
+                    pass("testSingleThreadIncrement");
+                } catch (Exception e) {
+                    fail("testSingleThreadIncrement", e);
+                }
+            }
+
+            static void testAdd() {
+                try {
+                    Counter counter = new Counter();
+
+                    assertEquals(5, counter.add(5), "testAdd: first");
+                    assertEquals(15, counter.add(10), "testAdd: second");
+                    assertEquals(15, counter.getValue(), "testAdd: value");
+                    pass("testAdd");
+                } catch (Exception e) {
+                    fail("testAdd", e);
+                }
+            }
+
+            static void testReset() {
+                try {
+                    Counter counter = new Counter();
+
+                    counter.increment();
+                    counter.increment();
+                    counter.reset();
+
+                    assertEquals(0, counter.getValue(), "testReset");
+                    pass("testReset");
+                } catch (Exception e) {
+                    fail("testReset", e);
+                }
+            }
+
+            static void testConcurrentIncrements() throws InterruptedException {
+                try {
+                    Counter counter = new Counter();
+                    CounterUser user = new CounterUser(counter);
+
+                    // 10 threads, each incrementing 1000 times = 10000 total
+                    int result = user.concurrentIncrements(10, 1000);
+
+                    // This test fails intermittently due to race condition
+                    assertEquals(10000, result, "testConcurrentIncrements");
+                    pass("testConcurrentIncrements");
+                } catch (Exception e) {
+                    fail("testConcurrentIncrements", e);
+                }
+            }
+
+            static void testCompareAndIncrement() {
+                try {
+                    Counter counter = new Counter();
+
+                    assertTrue(counter.compareAndIncrement(0), "testCompareAndIncrement: first");
+                    assertEquals(1, counter.getValue(), "testCompareAndIncrement: value1");
+
+                    assertFalse(counter.compareAndIncrement(0), "testCompareAndIncrement: second (should fail)");
+                    assertEquals(1, counter.getValue(), "testCompareAndIncrement: value2");
+
+                    assertTrue(counter.compareAndIncrement(1), "testCompareAndIncrement: third");
+                    assertEquals(2, counter.getValue(), "testCompareAndIncrement: value3");
+                    pass("testCompareAndIncrement");
+                } catch (Exception e) {
+                    fail("testCompareAndIncrement", e);
+                }
+            }
+
+            static void assertEquals(int expected, int actual, String msg) {
+                if (expected != actual) {
+                    throw new AssertionError(msg + ": expected <" + expected + "> but was <" + actual + ">");
+                }
+            }
+
+            static void assertTrue(boolean condition, String msg) {
+                if (!condition) {
+                    throw new AssertionError(msg + ": expected true but was false");
+                }
+            }
+
+            static void assertFalse(boolean condition, String msg) {
+                if (condition) {
+                    throw new AssertionError(msg + ": expected false but was true");
+                }
+            }
+
+            static void pass(String testName) {
+                System.out.println("PASS: " + testName);
+                passed++;
+            }
+
+            static void fail(String testName, Exception e) {
+                System.out.println("FAIL: " + testName + " - " + e.getMessage());
+                failed++;
+            }
+        }
+
+prompt: |
+  Debug the Counter class which has intermittent test failures.
+
+  The workspace contains:
+  - src/Counter.java - Thread-safe counter (has bug)
+  - src/CounterUser.java - Uses the counter from multiple threads
+  - test/CounterTest.java - Tests that fail intermittently
+
+  The test `testConcurrentIncrements` sometimes passes, sometimes fails.
+  This indicates a race condition.
+
+  Requirements:
+  1. Identify the race condition in Counter.java
+  2. Fix it using proper synchronization
+  3. Tests must pass reliably: javac src/*.java test/*.java && java -cp .:src:test CounterTest
+
+expectedBehavior: |
+  Agent should:
+  - Identify race condition in read-modify-write operations
+  - Fix increment(), add(), compareAndIncrement() methods
+  - Use synchronized keyword or AtomicInteger
+  - All tests pass reliably (including concurrent test)
+  - No deadlocks introduced
+
+successCriteria:
+  - type: file_contains
+    args: ["src/Counter.java", "synchronized"]
+  - type: command_succeeds
+    args: ["javac src/*.java test/*.java && java -cp .:src:test CounterTest"]

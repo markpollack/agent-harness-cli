@@ -1,0 +1,194 @@
+# Advanced Test: Spring Boot REST API
+# Inspired by Spring's "Building a RESTful Web Service" guide
+# Difficulty: hard, Expert Time: ~15 min
+# Note: May require WebSearch tool to find Spring Boot documentation
+name: Spring Boot REST API
+category: advanced
+difficulty: hard
+requiresApi: true
+maxTurns: 25
+timeoutSeconds: 900
+
+setup:
+  files:
+    - path: "pom.xml"
+      content: |
+        <?xml version="1.0" encoding="UTF-8"?>
+        <project xmlns="http://maven.apache.org/POM/4.0.0"
+                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+            <modelVersion>4.0.0</modelVersion>
+            <parent>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-parent</artifactId>
+                <version>3.2.0</version>
+                <relativePath/>
+            </parent>
+            <groupId>com.example</groupId>
+            <artifactId>greeting</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+            <name>greeting</name>
+            <description>Demo project for Spring Boot REST API</description>
+            <properties>
+                <java.version>17</java.version>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-web</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-test</artifactId>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-maven-plugin</artifactId>
+                    </plugin>
+                </plugins>
+            </build>
+        </project>
+    - path: "src/main/java/com/example/greeting/GreetingApplication.java"
+      content: |
+        package com.example.greeting;
+
+        // TODO: Add @SpringBootApplication annotation
+        // TODO: Add main method with SpringApplication.run()
+
+        public class GreetingApplication {
+
+            public static void main(String[] args) {
+                // TODO: Implement
+            }
+
+        }
+    - path: "src/main/java/com/example/greeting/Greeting.java"
+      content: |
+        package com.example.greeting;
+
+        // TODO: Implement Greeting class or record
+        // Should have:
+        // - long id
+        // - String content
+        // - Appropriate constructor and getters
+    - path: "src/main/java/com/example/greeting/GreetingController.java"
+      content: |
+        package com.example.greeting;
+
+        // TODO: Add necessary imports
+        // TODO: Add @RestController annotation
+
+        public class GreetingController {
+
+            // TODO: Add counter for id
+            // private static final String template = "Hello, %s!";
+            // private final AtomicLong counter = new AtomicLong();
+
+            // TODO: Implement GET /greeting endpoint
+            // Should accept optional "name" query parameter (default: "World")
+            // Should return Greeting with incrementing id and formatted content
+
+        }
+    - path: "src/test/java/com/example/greeting/GreetingControllerTest.java"
+      content: |
+        package com.example.greeting;
+
+        import org.junit.jupiter.api.Test;
+        import org.springframework.beans.factory.annotation.Autowired;
+        import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+        import org.springframework.boot.test.context.SpringBootTest;
+        import org.springframework.test.web.servlet.MockMvc;
+
+        import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+        import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+        @SpringBootTest
+        @AutoConfigureMockMvc
+        public class GreetingControllerTest {
+
+            @Autowired
+            private MockMvc mockMvc;
+
+            @Test
+            public void greetingDefaultName() throws Exception {
+                mockMvc.perform(get("/greeting"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.content").value("Hello, World!"))
+                        .andExpect(jsonPath("$.id").isNumber());
+            }
+
+            @Test
+            public void greetingWithName() throws Exception {
+                mockMvc.perform(get("/greeting").param("name", "Spring"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.content").value("Hello, Spring!"))
+                        .andExpect(jsonPath("$.id").isNumber());
+            }
+
+            @Test
+            public void greetingIdIncrements() throws Exception {
+                // First call
+                mockMvc.perform(get("/greeting"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.id").isNumber());
+
+                // Second call should have different id (incrementing)
+                mockMvc.perform(get("/greeting"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.id").isNumber());
+            }
+        }
+    - path: "mvnw"
+      content: |
+        #!/bin/sh
+        # Simplified mvnw for test purposes - delegates to system maven
+        exec mvn "$@"
+
+prompt: |
+  Create a Spring Boot REST API for a greeting service.
+
+  The workspace contains a Maven project structure that needs implementation:
+  - pom.xml - Maven build file (complete, includes spring-boot-starter-web)
+  - src/main/java/com/example/greeting/GreetingApplication.java - Main class (needs @SpringBootApplication)
+  - src/main/java/com/example/greeting/Greeting.java - Data class (needs implementation)
+  - src/main/java/com/example/greeting/GreetingController.java - REST controller (needs implementation)
+
+  Requirements:
+  1. Implement Greeting.java as a simple record or class with:
+     - long id
+     - String content
+
+  2. Implement GreetingController.java with:
+     - @RestController annotation
+     - GET /greeting endpoint that accepts optional "name" query parameter
+     - Default name should be "World"
+     - Returns JSON like: {"id": 1, "content": "Hello, World!"}
+     - Each call should increment the id counter
+
+  3. Add @SpringBootApplication to GreetingApplication.java
+
+  4. Verify by compiling: `chmod +x mvnw && ./mvnw compile -q`
+
+  Note: If you need to look up Spring Boot annotations or conventions,
+  you may search for "Spring Boot REST tutorial" or similar.
+
+expectedBehavior: |
+  Agent should:
+  - Add @SpringBootApplication and SpringApplication.run() to GreetingApplication.java
+  - Implement Greeting.java as record or class with id and content
+  - Implement GreetingController.java with @RestController, @GetMapping, @RequestParam
+  - Use AtomicLong counter for thread safety
+  - Application compiles with ./mvnw compile
+  - All tests pass with ./mvnw test
+
+successCriteria:
+  - type: file_contains
+    args: ["src/main/java/com/example/greeting/GreetingController.java", "@RestController"]
+  - type: file_contains
+    args: ["src/main/java/com/example/greeting/GreetingApplication.java", "@SpringBootApplication"]
+  - type: command_succeeds
+    args: ["chmod +x mvnw && ./mvnw compile -q"]

@@ -1,0 +1,64 @@
+# Isolation test: Simple file edit with correct YAML format
+# Used to verify MiniAgent handles paths correctly when files are created properly
+name: Isolation Test - Simple Edit
+category: advanced
+difficulty: easy
+requiresApi: true
+maxTurns: 10
+timeoutSeconds: 120
+
+setup:
+  files:
+    - path: "src/BuggyCode.java"
+      content: |
+        public class BuggyCode {
+            public String greet(String name) {
+                // BUG: Missing null check
+                return "Hello, " + name.toUpperCase();
+            }
+        }
+    - path: "test/BuggyCodeTest.java"
+      content: |
+        public class BuggyCodeTest {
+            public static void main(String[] args) {
+                BuggyCode code = new BuggyCode();
+
+                // Test 1: Normal case
+                String result = code.greet("World");
+                if (!"Hello, WORLD".equals(result)) {
+                    System.out.println("FAIL: Expected 'Hello, WORLD' but got '" + result + "'");
+                    System.exit(1);
+                }
+
+                // Test 2: Null case - should not throw NPE
+                try {
+                    result = code.greet(null);
+                    if (result == null || !result.contains("Hello")) {
+                        System.out.println("FAIL: Null input should return a greeting");
+                        System.exit(1);
+                    }
+                } catch (NullPointerException e) {
+                    System.out.println("FAIL: NullPointerException when name is null");
+                    System.exit(1);
+                }
+
+                System.out.println("PASS: All tests passed");
+            }
+        }
+
+prompt: |
+  Fix the bug in src/BuggyCode.java.
+
+  The greet() method throws NullPointerException when name is null.
+  Add a null check that returns "Hello, Guest" when name is null.
+
+  Verify your fix by compiling and running:
+  javac src/BuggyCode.java test/BuggyCodeTest.java && java -cp .:src:test BuggyCodeTest
+
+expectedBehavior: Agent should add null check and verify with test
+
+successCriteria:
+  - type: file_contains
+    args: ["src/BuggyCode.java", "null"]
+  - type: command_succeeds
+    args: ["javac src/BuggyCode.java test/BuggyCodeTest.java && java -cp .:src:test BuggyCodeTest"]

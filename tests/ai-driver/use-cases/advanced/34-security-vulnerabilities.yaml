@@ -1,0 +1,361 @@
+# Advanced Test: Security Input Validation
+# Inspired by terminal-bench security tasks
+# Difficulty: medium-hard, Expert Time: ~10 min
+name: Fix Security Vulnerabilities
+category: advanced
+difficulty: hard
+requiresApi: true
+maxTurns: 25
+timeoutSeconds: 900
+
+setup:
+  files:
+    - path: "src/QueryBuilder.java"
+      content: |
+        /**
+         * Builds SQL queries.
+         * VULNERABILITY: SQL Injection - user input directly concatenated into query
+         */
+        public class QueryBuilder {
+            /**
+             * Builds a SELECT query for finding users.
+             * @param username the username to search for
+             * @return SQL query string and parameters
+             */
+            public QueryResult buildUserQuery(String username) {
+                // VULNERABLE: Direct string concatenation
+                String sql = "SELECT * FROM users WHERE username = '" + username + "'";
+                return new QueryResult(sql, new Object[]{});
+            }
+
+            /**
+             * Builds a SELECT query with multiple conditions.
+             */
+            public QueryResult buildSearchQuery(String name, String email) {
+                // VULNERABLE: Direct string concatenation
+                String sql = "SELECT * FROM users WHERE name = '" + name + "' AND email = '" + email + "'";
+                return new QueryResult(sql, new Object[]{});
+            }
+        }
+    - path: "src/QueryResult.java"
+      content: |
+        /**
+         * Holds a parameterized query and its parameters.
+         */
+        public class QueryResult {
+            private final String sql;
+            private final Object[] parameters;
+
+            public QueryResult(String sql, Object[] parameters) {
+                this.sql = sql;
+                this.parameters = parameters;
+            }
+
+            public String getSql() { return sql; }
+            public Object[] getParameters() { return parameters; }
+        }
+    - path: "src/HtmlRenderer.java"
+      content: |
+        /**
+         * Renders HTML content.
+         * VULNERABILITY: XSS - user input rendered without escaping
+         */
+        public class HtmlRenderer {
+            /**
+             * Renders a welcome message.
+             * @param username the username to display
+             * @return HTML string
+             */
+            public String renderWelcome(String username) {
+                // VULNERABLE: No HTML escaping
+                return "<div class=\"welcome\">Hello, " + username + "!</div>";
+            }
+
+            /**
+             * Renders a comment.
+             * @param author comment author
+             * @param content comment content
+             * @return HTML string
+             */
+            public String renderComment(String author, String content) {
+                // VULNERABLE: No HTML escaping
+                return "<div class=\"comment\"><b>" + author + "</b>: " + content + "</div>";
+            }
+        }
+    - path: "src/PathResolver.java"
+      content: |
+        import java.io.File;
+
+        /**
+         * Resolves file paths within a base directory.
+         * VULNERABILITY: Path Traversal - allows escaping base directory
+         */
+        public class PathResolver {
+            private final String baseDirectory;
+
+            public PathResolver(String baseDirectory) {
+                this.baseDirectory = baseDirectory;
+            }
+
+            /**
+             * Resolves a relative path within the base directory.
+             * @param relativePath the relative path to resolve
+             * @return the full path, or null if invalid
+             */
+            public String resolve(String relativePath) {
+                if (relativePath == null || relativePath.isEmpty()) {
+                    return null;
+                }
+                // VULNERABLE: Allows ../ to escape base directory
+                return baseDirectory + File.separator + relativePath;
+            }
+        }
+    - path: "test/SecurityTest.java"
+      content: |
+        public class SecurityTest {
+            private static int passed = 0;
+            private static int failed = 0;
+
+            public static void main(String[] args) {
+                // SQL Injection Tests
+                testQueryBuilderNormalInput();
+                testQueryBuilderSqlInjectionPrevented();
+                testSearchQueryParameterized();
+
+                // XSS Tests
+                testHtmlRendererNormalInput();
+                testHtmlRendererXssPrevented();
+                testCommentXssPrevented();
+
+                // Path Traversal Tests
+                testPathResolverNormalInput();
+                testPathResolverTraversalPrevented();
+                testPathResolverNestedTraversalPrevented();
+                testPathResolverValidSubdirectory();
+
+                System.out.println("\nResults: " + passed + " passed, " + failed + " failed");
+                if (failed > 0) {
+                    System.exit(1);
+                }
+            }
+
+            // === SQL Injection Tests ===
+
+            static void testQueryBuilderNormalInput() {
+                try {
+                    QueryBuilder builder = new QueryBuilder();
+                    QueryResult result = builder.buildUserQuery("john");
+
+                    assertEquals("SELECT * FROM users WHERE username = ?", result.getSql(), "testQueryBuilderNormalInput: sql");
+                    assertEquals(1, result.getParameters().length, "testQueryBuilderNormalInput: params length");
+                    assertEquals("john", result.getParameters()[0], "testQueryBuilderNormalInput: param value");
+                    pass("testQueryBuilderNormalInput");
+                } catch (Exception e) {
+                    fail("testQueryBuilderNormalInput", e);
+                }
+            }
+
+            static void testQueryBuilderSqlInjectionPrevented() {
+                try {
+                    QueryBuilder builder = new QueryBuilder();
+                    QueryResult result = builder.buildUserQuery("' OR '1'='1");
+
+                    assertEquals("SELECT * FROM users WHERE username = ?", result.getSql(), "testQueryBuilderSqlInjectionPrevented: sql");
+                    assertFalse(result.getSql().contains("OR"), "testQueryBuilderSqlInjectionPrevented: no OR");
+                    pass("testQueryBuilderSqlInjectionPrevented");
+                } catch (Exception e) {
+                    fail("testQueryBuilderSqlInjectionPrevented", e);
+                }
+            }
+
+            static void testSearchQueryParameterized() {
+                try {
+                    QueryBuilder builder = new QueryBuilder();
+                    QueryResult result = builder.buildSearchQuery("John", "john@test.com");
+
+                    assertEquals("SELECT * FROM users WHERE name = ? AND email = ?", result.getSql(), "testSearchQueryParameterized: sql");
+                    assertEquals(2, result.getParameters().length, "testSearchQueryParameterized: params");
+                    pass("testSearchQueryParameterized");
+                } catch (Exception e) {
+                    fail("testSearchQueryParameterized", e);
+                }
+            }
+
+            // === XSS Tests ===
+
+            static void testHtmlRendererNormalInput() {
+                try {
+                    HtmlRenderer renderer = new HtmlRenderer();
+                    String html = renderer.renderWelcome("John");
+
+                    assertTrue(html.contains("John"), "testHtmlRendererNormalInput: contains John");
+                    assertTrue(html.contains("welcome"), "testHtmlRendererNormalInput: contains welcome");
+                    pass("testHtmlRendererNormalInput");
+                } catch (Exception e) {
+                    fail("testHtmlRendererNormalInput", e);
+                }
+            }
+
+            static void testHtmlRendererXssPrevented() {
+                try {
+                    HtmlRenderer renderer = new HtmlRenderer();
+                    String html = renderer.renderWelcome("<script>alert('xss')</script>");
+
+                    assertFalse(html.contains("<script>"), "testHtmlRendererXssPrevented: no script tag");
+                    assertTrue(html.contains("&lt;script&gt;") || html.contains("&#"), "testHtmlRendererXssPrevented: escaped");
+                    pass("testHtmlRendererXssPrevented");
+                } catch (Exception e) {
+                    fail("testHtmlRendererXssPrevented", e);
+                }
+            }
+
+            static void testCommentXssPrevented() {
+                try {
+                    HtmlRenderer renderer = new HtmlRenderer();
+                    String html = renderer.renderComment("Hacker", "<img onerror='alert(1)' src='x'>");
+
+                    assertFalse(html.contains("<img"), "testCommentXssPrevented: no img tag");
+                    assertFalse(html.contains("onerror"), "testCommentXssPrevented: no onerror");
+                    pass("testCommentXssPrevented");
+                } catch (Exception e) {
+                    fail("testCommentXssPrevented", e);
+                }
+            }
+
+            // === Path Traversal Tests ===
+
+            static void testPathResolverNormalInput() {
+                try {
+                    PathResolver resolver = new PathResolver("/var/www/files");
+                    String path = resolver.resolve("document.pdf");
+
+                    assertNotNull(path, "testPathResolverNormalInput: not null");
+                    assertTrue(path.endsWith("document.pdf"), "testPathResolverNormalInput: ends with");
+                    pass("testPathResolverNormalInput");
+                } catch (Exception e) {
+                    fail("testPathResolverNormalInput", e);
+                }
+            }
+
+            static void testPathResolverTraversalPrevented() {
+                try {
+                    PathResolver resolver = new PathResolver("/var/www/files");
+                    String path = resolver.resolve("../../../etc/passwd");
+
+                    assertNull(path, "testPathResolverTraversalPrevented");
+                    pass("testPathResolverTraversalPrevented");
+                } catch (Exception e) {
+                    fail("testPathResolverTraversalPrevented", e);
+                }
+            }
+
+            static void testPathResolverNestedTraversalPrevented() {
+                try {
+                    PathResolver resolver = new PathResolver("/var/www/files");
+                    String path = resolver.resolve("subdir/../../secret.txt");
+
+                    assertNull(path, "testPathResolverNestedTraversalPrevented");
+                    pass("testPathResolverNestedTraversalPrevented");
+                } catch (Exception e) {
+                    fail("testPathResolverNestedTraversalPrevented", e);
+                }
+            }
+
+            static void testPathResolverValidSubdirectory() {
+                try {
+                    PathResolver resolver = new PathResolver("/var/www/files");
+                    String path = resolver.resolve("subdir/file.txt");
+
+                    assertNotNull(path, "testPathResolverValidSubdirectory: not null");
+                    assertTrue(path.contains("subdir"), "testPathResolverValidSubdirectory: contains subdir");
+                    pass("testPathResolverValidSubdirectory");
+                } catch (Exception e) {
+                    fail("testPathResolverValidSubdirectory", e);
+                }
+            }
+
+            // Helper methods
+            static void assertEquals(String expected, String actual, String msg) {
+                if (!expected.equals(actual)) {
+                    throw new AssertionError(msg + ": expected <" + expected + "> but was <" + actual + ">");
+                }
+            }
+
+            static void assertEquals(int expected, int actual, String msg) {
+                if (expected != actual) {
+                    throw new AssertionError(msg + ": expected <" + expected + "> but was <" + actual + ">");
+                }
+            }
+
+            static void assertEquals(Object expected, Object actual, String msg) {
+                if (!expected.equals(actual)) {
+                    throw new AssertionError(msg + ": expected <" + expected + "> but was <" + actual + ">");
+                }
+            }
+
+            static void assertTrue(boolean condition, String msg) {
+                if (!condition) {
+                    throw new AssertionError(msg + ": expected true but was false");
+                }
+            }
+
+            static void assertFalse(boolean condition, String msg) {
+                if (condition) {
+                    throw new AssertionError(msg + ": expected false but was true");
+                }
+            }
+
+            static void assertNotNull(Object obj, String msg) {
+                if (obj == null) {
+                    throw new AssertionError(msg + ": expected non-null but was null");
+                }
+            }
+
+            static void assertNull(Object obj, String msg) {
+                if (obj != null) {
+                    throw new AssertionError(msg + ": expected null but was <" + obj + ">");
+                }
+            }
+
+            static void pass(String testName) {
+                System.out.println("PASS: " + testName);
+                passed++;
+            }
+
+            static void fail(String testName, Exception e) {
+                System.out.println("FAIL: " + testName + " - " + e.getMessage());
+                failed++;
+            }
+        }
+
+prompt: |
+  The code has security vulnerabilities in input handling.
+  Find and fix them.
+
+  The workspace contains:
+  - src/QueryBuilder.java - SQL query builder (has SQL injection vulnerability)
+  - src/HtmlRenderer.java - HTML content renderer (has XSS vulnerability)
+  - src/PathResolver.java - File path resolver (has path traversal vulnerability)
+  - test/SecurityTest.java - Tests that check both security and functionality
+
+  Requirements:
+  1. Fix SQL injection in QueryBuilder.java (use parameterized query pattern)
+  2. Fix XSS in HtmlRenderer.java (escape HTML entities)
+  3. Fix path traversal in PathResolver.java (validate path doesn't escape base)
+  4. All tests must pass: javac src/*.java test/*.java && java -cp .:src:test SecurityTest
+
+expectedBehavior: |
+  Agent should:
+  - QueryBuilder uses parameterized queries with ? placeholders
+  - HtmlRenderer escapes < > & " characters
+  - PathResolver validates resolved path stays within base directory
+  - All 10 tests pass
+  - Functionality preserved while security added
+
+successCriteria:
+  - type: file_contains
+    args: ["src/QueryBuilder.java", "?"]
+  - type: file_contains
+    args: ["src/HtmlRenderer.java", "&lt;"]
+  - type: command_succeeds
+    args: ["javac src/*.java test/*.java && java -cp .:src:test SecurityTest"]

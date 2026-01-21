@@ -1,0 +1,233 @@
+# Advanced Test: Log Analysis and Bug Fix
+# Inspired by terminal-bench system-administration/debugging tasks
+# Difficulty: medium-hard, Expert Time: ~8 min
+name: Log Analysis and Bug Fix
+category: advanced
+difficulty: medium
+requiresApi: true
+maxTurns: 25
+timeoutSeconds: 600
+
+setup:
+  files:
+    - path: "logs/app.log"
+      content: |
+        2024-01-15 10:23:15 INFO  Starting application...
+        2024-01-15 10:23:16 INFO  UserService initialized
+        2024-01-15 10:23:20 INFO  Processing user: alice@example.com
+        2024-01-15 10:23:20 INFO  User validated successfully
+        2024-01-15 10:23:45 INFO  Processing user: bob@example.com
+        2024-01-15 10:23:45 INFO  User validated successfully
+        2024-01-15 10:24:02 INFO  Processing user: charlie@example.com
+        2024-01-15 10:24:02 INFO  User validated successfully
+        2024-01-15 10:25:30 INFO  Processing user: null
+        2024-01-15 10:25:30 ERROR NullPointerException in validateEmail
+        2024-01-15 10:25:30 ERROR   at UserService.validateEmail(UserService.java:25)
+        2024-01-15 10:25:30 ERROR   at UserService.processUser(UserService.java:15)
+        2024-01-15 10:30:15 INFO  Processing user: dave@example.com
+        2024-01-15 10:30:15 INFO  User validated successfully
+        2024-01-15 10:31:00 INFO  Processing user: admin
+        2024-01-15 10:31:00 ERROR NullPointerException in validateEmail
+        2024-01-15 10:31:00 ERROR   at UserService.validateEmail(UserService.java:25)
+        2024-01-15 10:31:00 ERROR   at UserService.processUser(UserService.java:15)
+        2024-01-15 10:35:22 INFO  Processing user: eve@corp.net
+        2024-01-15 10:35:22 INFO  User validated successfully
+    - path: "src/User.java"
+      content: |
+        public class User {
+            private String email;
+            private String name;
+
+            public User(String email, String name) {
+                this.email = email;
+                this.name = name;
+            }
+
+            public String getEmail() { return email; }
+            public String getName() { return name; }
+        }
+    - path: "src/UserService.java"
+      content: |
+        public class UserService {
+            /**
+             * Processes a user and returns a status message.
+             */
+            public String processUser(User user) {
+                if (user == null) {
+                    return "Error: User is null";
+                }
+
+                // Validate email
+                if (!validateEmail(user.getEmail())) {
+                    return "Error: Invalid email";
+                }
+
+                return "User " + user.getEmail() + " processed successfully";
+            }
+
+            /**
+             * Validates email format.
+             * BUG: Does not handle null emails
+             */
+            private boolean validateEmail(String email) {
+                // Check for @ symbol
+                return email.contains("@") && email.contains(".");
+            }
+
+            /**
+             * Creates a user from registration data.
+             */
+            public User createUser(String email, String name) {
+                if (email == null || email.isEmpty()) {
+                    return null;
+                }
+                return new User(email, name);
+            }
+        }
+    - path: "test/UserServiceTest.java"
+      content: |
+        public class UserServiceTest {
+            private static int passed = 0;
+            private static int failed = 0;
+
+            public static void main(String[] args) {
+                testProcessValidUser();
+                testProcessNullUser();
+                testProcessUserWithNullEmail();
+                testProcessUserWithInvalidEmail();
+                testCreateUserValid();
+                testCreateUserNullEmail();
+
+                System.out.println("\nResults: " + passed + " passed, " + failed + " failed");
+                if (failed > 0) {
+                    System.exit(1);
+                }
+            }
+
+            static void testProcessValidUser() {
+                try {
+                    UserService service = new UserService();
+                    User user = new User("test@example.com", "Test User");
+                    String result = service.processUser(user);
+                    assertEquals("User test@example.com processed successfully", result, "testProcessValidUser");
+                    pass("testProcessValidUser");
+                } catch (Exception e) {
+                    fail("testProcessValidUser", e);
+                }
+            }
+
+            static void testProcessNullUser() {
+                try {
+                    UserService service = new UserService();
+                    String result = service.processUser(null);
+                    assertEquals("Error: User is null", result, "testProcessNullUser");
+                    pass("testProcessNullUser");
+                } catch (Exception e) {
+                    fail("testProcessNullUser", e);
+                }
+            }
+
+            static void testProcessUserWithNullEmail() {
+                try {
+                    UserService service = new UserService();
+                    User user = new User(null, "Test User");
+                    String result = service.processUser(user);
+                    assertEquals("Error: Invalid email", result, "testProcessUserWithNullEmail");
+                    pass("testProcessUserWithNullEmail");
+                } catch (Exception e) {
+                    fail("testProcessUserWithNullEmail", e);
+                }
+            }
+
+            static void testProcessUserWithInvalidEmail() {
+                try {
+                    UserService service = new UserService();
+                    User user = new User("notanemail", "Test User");
+                    String result = service.processUser(user);
+                    assertEquals("Error: Invalid email", result, "testProcessUserWithInvalidEmail");
+                    pass("testProcessUserWithInvalidEmail");
+                } catch (Exception e) {
+                    fail("testProcessUserWithInvalidEmail", e);
+                }
+            }
+
+            static void testCreateUserValid() {
+                try {
+                    UserService service = new UserService();
+                    User user = service.createUser("test@example.com", "Test");
+                    assertNotNull(user, "testCreateUserValid: user");
+                    assertEquals("test@example.com", user.getEmail(), "testCreateUserValid: email");
+                    pass("testCreateUserValid");
+                } catch (Exception e) {
+                    fail("testCreateUserValid", e);
+                }
+            }
+
+            static void testCreateUserNullEmail() {
+                try {
+                    UserService service = new UserService();
+                    User user = service.createUser(null, "Test");
+                    assertNull(user, "testCreateUserNullEmail");
+                    pass("testCreateUserNullEmail");
+                } catch (Exception e) {
+                    fail("testCreateUserNullEmail", e);
+                }
+            }
+
+            static void assertEquals(String expected, String actual, String msg) {
+                if (!expected.equals(actual)) {
+                    throw new AssertionError(msg + ": expected <" + expected + "> but was <" + actual + ">");
+                }
+            }
+
+            static void assertNotNull(Object obj, String msg) {
+                if (obj == null) {
+                    throw new AssertionError(msg + ": expected non-null but was null");
+                }
+            }
+
+            static void assertNull(Object obj, String msg) {
+                if (obj != null) {
+                    throw new AssertionError(msg + ": expected null but was <" + obj + ">");
+                }
+            }
+
+            static void pass(String testName) {
+                System.out.println("PASS: " + testName);
+                passed++;
+            }
+
+            static void fail(String testName, Exception e) {
+                System.out.println("FAIL: " + testName + " - " + e.getMessage());
+                failed++;
+            }
+        }
+
+prompt: |
+  The application has been crashing intermittently. Analyze the logs
+  to find the bug and fix it.
+
+  The workspace contains:
+  - logs/app.log - Application logs showing errors
+  - src/UserService.java - User service with a bug
+  - src/User.java - User entity
+  - test/UserServiceTest.java - Tests (should pass after fix)
+
+  Requirements:
+  1. Analyze logs/app.log to identify the error pattern
+  2. Find the bug in src/UserService.java
+  3. Fix the bug
+  4. Verify: javac src/*.java test/*.java && java -cp .:src:test UserServiceTest
+
+expectedBehavior: |
+  Agent should:
+  - Analyze logs to find NullPointerException in validateEmail
+  - Identify that null email causes crash (lines 25, 15 in stack trace)
+  - Fix validateEmail to handle null email
+  - All 6 tests pass
+
+successCriteria:
+  - type: file_contains
+    args: ["src/UserService.java", "null"]
+  - type: command_succeeds
+    args: ["javac src/*.java test/*.java && java -cp .:src:test UserServiceTest"]

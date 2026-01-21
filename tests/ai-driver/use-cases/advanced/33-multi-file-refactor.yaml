@@ -1,0 +1,263 @@
+# Advanced Test: Multi-file Refactoring with Test Preservation
+# Inspired by terminal-bench software-engineering tasks
+# Difficulty: hard, Expert Time: ~10 min
+name: Multi-file Refactor with Tests
+category: advanced
+difficulty: hard
+requiresApi: true
+maxTurns: 25
+timeoutSeconds: 900
+
+setup:
+  files:
+    - path: "src/Order.java"
+      content: |
+        public class Order {
+            private String id;
+            private String customerId;
+            private java.util.List<OrderItem> items = new java.util.ArrayList<>();
+            private double discount;
+
+            public Order(String id, String customerId) {
+                this.id = id;
+                this.customerId = customerId;
+            }
+
+            public String getId() { return id; }
+            public String getCustomerId() { return customerId; }
+            public java.util.List<OrderItem> getItems() { return items; }
+            public void addItem(OrderItem item) { items.add(item); }
+            public double getDiscount() { return discount; }
+            public void setDiscount(double discount) { this.discount = discount; }
+        }
+    - path: "src/OrderItem.java"
+      content: |
+        public class OrderItem {
+            private String productId;
+            private String name;
+            private double price;
+            private int quantity;
+
+            public OrderItem(String productId, String name, double price, int quantity) {
+                this.productId = productId;
+                this.name = name;
+                this.price = price;
+                this.quantity = quantity;
+            }
+
+            public String getProductId() { return productId; }
+            public String getName() { return name; }
+            public double getPrice() { return price; }
+            public int getQuantity() { return quantity; }
+        }
+    - path: "src/OrderService.java"
+      content: |
+        import java.util.List;
+        import java.util.ArrayList;
+
+        public class OrderService {
+            private List<Order> orders = new ArrayList<>();
+
+            // DUPLICATE CODE - same calculation in getOrderTotal and processOrder
+            public double getOrderTotal(Order order) {
+                double total = 0;
+                for (OrderItem item : order.getItems()) {
+                    total += item.getPrice() * item.getQuantity();
+                }
+                total = total - (total * order.getDiscount());
+                return total;
+            }
+
+            // LONG METHOD - should be split into smaller methods
+            public String processOrder(Order order) {
+                // Validate order
+                if (order == null) {
+                    return "ERROR: Order is null";
+                }
+                if (order.getId() == null || order.getId().isEmpty()) {
+                    return "ERROR: Order ID is required";
+                }
+                if (order.getItems() == null || order.getItems().isEmpty()) {
+                    return "ERROR: Order must have items";
+                }
+
+                // Check inventory (simulated)
+                for (OrderItem item : order.getItems()) {
+                    if (item.getQuantity() <= 0) {
+                        return "ERROR: Invalid quantity for " + item.getName();
+                    }
+                    if (item.getPrice() < 0) {
+                        return "ERROR: Invalid price for " + item.getName();
+                    }
+                }
+
+                // Calculate total - DUPLICATE of getOrderTotal
+                double total = 0;
+                for (OrderItem item : order.getItems()) {
+                    total += item.getPrice() * item.getQuantity();
+                }
+                total = total - (total * order.getDiscount());
+
+                // Apply business rules
+                if (total > 1000) {
+                    total = total * 0.95; // 5% discount for large orders
+                }
+                if (total > 5000) {
+                    total = total * 0.90; // Additional 10% for very large orders
+                }
+
+                // Store order
+                orders.add(order);
+
+                // Generate confirmation
+                return "Order " + order.getId() + " processed. Total: $" + String.format("%.2f", total);
+            }
+
+            public List<Order> getOrders() {
+                return orders;
+            }
+        }
+    - path: "test/OrderServiceTest.java"
+      content: |
+        public class OrderServiceTest {
+            private static int passed = 0;
+            private static int failed = 0;
+
+            public static void main(String[] args) {
+                testGetOrderTotal();
+                testGetOrderTotalWithDiscount();
+                testProcessOrderSuccess();
+                testProcessOrderNullOrder();
+                testProcessOrderEmptyItems();
+
+                System.out.println("\nResults: " + passed + " passed, " + failed + " failed");
+                if (failed > 0) {
+                    System.exit(1);
+                }
+            }
+
+            static void testGetOrderTotal() {
+                try {
+                    OrderService service = new OrderService();
+                    Order order = new Order("1", "cust1");
+                    order.addItem(new OrderItem("p1", "Widget", 10.0, 2));
+                    order.addItem(new OrderItem("p2", "Gadget", 25.0, 1));
+
+                    double total = service.getOrderTotal(order);
+                    assertEquals(45.0, total, 0.01, "testGetOrderTotal");
+                    pass("testGetOrderTotal");
+                } catch (Exception e) {
+                    fail("testGetOrderTotal", e);
+                }
+            }
+
+            static void testGetOrderTotalWithDiscount() {
+                try {
+                    OrderService service = new OrderService();
+                    Order order = new Order("1", "cust1");
+                    order.addItem(new OrderItem("p1", "Widget", 100.0, 1));
+                    order.setDiscount(0.10); // 10% discount
+
+                    double total = service.getOrderTotal(order);
+                    assertEquals(90.0, total, 0.01, "testGetOrderTotalWithDiscount");
+                    pass("testGetOrderTotalWithDiscount");
+                } catch (Exception e) {
+                    fail("testGetOrderTotalWithDiscount", e);
+                }
+            }
+
+            static void testProcessOrderSuccess() {
+                try {
+                    OrderService service = new OrderService();
+                    Order order = new Order("1", "cust1");
+                    order.addItem(new OrderItem("p1", "Widget", 10.0, 2));
+
+                    String result = service.processOrder(order);
+                    assertTrue(result.contains("Order 1 processed"), "testProcessOrderSuccess: contains");
+                    assertEquals(1, service.getOrders().size(), "testProcessOrderSuccess: size");
+                    pass("testProcessOrderSuccess");
+                } catch (Exception e) {
+                    fail("testProcessOrderSuccess", e);
+                }
+            }
+
+            static void testProcessOrderNullOrder() {
+                try {
+                    OrderService service = new OrderService();
+                    String result = service.processOrder(null);
+                    assertTrue(result.contains("ERROR"), "testProcessOrderNullOrder");
+                    pass("testProcessOrderNullOrder");
+                } catch (Exception e) {
+                    fail("testProcessOrderNullOrder", e);
+                }
+            }
+
+            static void testProcessOrderEmptyItems() {
+                try {
+                    OrderService service = new OrderService();
+                    Order order = new Order("1", "cust1");
+                    String result = service.processOrder(order);
+                    assertTrue(result.contains("ERROR"), "testProcessOrderEmptyItems");
+                    pass("testProcessOrderEmptyItems");
+                } catch (Exception e) {
+                    fail("testProcessOrderEmptyItems", e);
+                }
+            }
+
+            static void assertEquals(double expected, double actual, double delta, String msg) {
+                if (Math.abs(expected - actual) > delta) {
+                    throw new AssertionError(msg + ": expected <" + expected + "> but was <" + actual + ">");
+                }
+            }
+
+            static void assertEquals(int expected, int actual, String msg) {
+                if (expected != actual) {
+                    throw new AssertionError(msg + ": expected <" + expected + "> but was <" + actual + ">");
+                }
+            }
+
+            static void assertTrue(boolean condition, String msg) {
+                if (!condition) {
+                    throw new AssertionError(msg + ": expected true but was false");
+                }
+            }
+
+            static void pass(String testName) {
+                System.out.println("PASS: " + testName);
+                passed++;
+            }
+
+            static void fail(String testName, Exception e) {
+                System.out.println("FAIL: " + testName + " - " + e.getMessage());
+                failed++;
+            }
+        }
+
+prompt: |
+  Refactor the OrderService codebase in the workspace.
+
+  Current structure:
+  - src/OrderService.java - has duplicate code and long methods
+  - src/Order.java - data class
+  - src/OrderItem.java - data class
+  - test/OrderServiceTest.java - unit tests (must keep passing)
+
+  Requirements:
+  1. Extract the duplicate calculateTotal logic into a separate TotalCalculator utility class
+  2. Split the processOrder method (>50 lines) into smaller focused methods
+  3. All existing tests must still pass after refactoring
+  4. Run `javac src/*.java test/*.java && java -cp .:src:test OrderServiceTest` to verify
+
+expectedBehavior: |
+  Agent should:
+  - Create TotalCalculator.java utility class
+  - Remove duplicate calculation code from OrderService
+  - Split processOrder into smaller methods
+  - All tests still pass after refactoring
+  - Code compiles without errors
+
+successCriteria:
+  - type: file_exists
+    args: ["src/TotalCalculator.java"]
+  - type: command_succeeds
+    args: ["javac src/*.java test/*.java && java -cp .:src:test OrderServiceTest"]

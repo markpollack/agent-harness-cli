@@ -55,6 +55,7 @@ import java.util.List;
  *   jbang RunAITest.java use-cases/basic/quit.yaml
  *   jbang RunAITest.java --all
  *   jbang RunAITest.java --category bug-fix
+ *   jbang RunAITest.java --category advanced --timeout 2400
  *   jbang RunAITest.java --compare use-cases/intermediate/21-api-design.yaml
  *   jbang RunAITest.java --list
  */
@@ -64,6 +65,12 @@ public class RunAITest {
     private static final Path LOGS_DIR = Path.of("logs");
     private static final Path CLI_JAR = Path.of("../../cli-app/target/cli-app-0.1.0-SNAPSHOT.jar");
     private static final int DEFAULT_MAX_TURNS = 10;
+    private static final int DEFAULT_TIMEOUT_SECONDS = 120;
+    private static final int ADVANCED_MAX_TURNS = 25;
+
+    // Runtime options parsed from command line
+    private static int timeoutSeconds = DEFAULT_TIMEOUT_SECONDS;
+    private static int maxTurns = DEFAULT_MAX_TURNS;
 
     // Cached executor for reuse across tests
     private static CliExecutor cachedExecutor;
@@ -77,18 +84,55 @@ public class RunAITest {
             return;
         }
 
+        // Parse global options
+        int i = 0;
+        String command = null;
+        String commandArg = null;
+
+        while (i < args.length) {
+            String arg = args[i];
+            if (arg.equals("--timeout") && i + 1 < args.length) {
+                timeoutSeconds = Integer.parseInt(args[++i]);
+                System.out.println("Timeout set to: " + timeoutSeconds + " seconds");
+            } else if (arg.equals("--max-turns") && i + 1 < args.length) {
+                maxTurns = Integer.parseInt(args[++i]);
+                System.out.println("Max turns set to: " + maxTurns);
+            } else if (arg.startsWith("--")) {
+                command = arg;
+                if (i + 1 < args.length && !args[i + 1].startsWith("--")) {
+                    commandArg = args[++i];
+                }
+            } else if (command == null) {
+                command = "single";
+                commandArg = arg;
+            }
+            i++;
+        }
+
+        // Auto-configure for advanced category
+        if ("--category".equals(command) && "advanced".equals(commandArg)) {
+            if (timeoutSeconds == DEFAULT_TIMEOUT_SECONDS) {
+                timeoutSeconds = 2400; // 40 minutes for advanced
+                System.out.println("Auto-set timeout to 2400s for advanced tests");
+            }
+            if (maxTurns == DEFAULT_MAX_TURNS) {
+                maxTurns = ADVANCED_MAX_TURNS;
+                System.out.println("Auto-set max turns to " + maxTurns + " for advanced tests");
+            }
+        }
+
         TestHarness harness = createHarness();
 
-        if (args[0].equals("--all")) {
-            runAll(harness);
-        } else if (args[0].equals("--category") && args.length > 1) {
-            runCategory(harness, args[1]);
-        } else if (args[0].equals("--compare") && args.length > 1) {
-            runComparison(createConfig(), args[1]);
-        } else if (args[0].equals("--list")) {
-            listUseCases();
-        } else {
-            runSingle(harness, args[0]);
+        switch (command) {
+            case "--all" -> runAll(harness);
+            case "--category" -> runCategory(harness, commandArg);
+            case "--compare" -> runComparison(createConfig(), commandArg);
+            case "--list" -> listUseCases();
+            case "single" -> runSingle(harness, commandArg);
+            default -> {
+                System.err.println("Unknown command: " + command);
+                printUsage();
+            }
         }
     }
 
@@ -153,7 +197,7 @@ public class RunAITest {
                 .transcriptsDir(LOGS_DIR)
                 .saveTranscripts(true)
                 .cleanupWorkspaces(true)
-                .defaultTimeoutSeconds(120)
+                .defaultTimeoutSeconds(timeoutSeconds)
                 .build();
     }
 
@@ -190,7 +234,7 @@ public class RunAITest {
                 .defaultOptions(options)
                 .build();
 
-        return new InProcessExecutor(chatModel, DEFAULT_MAX_TURNS);
+        return new InProcessExecutor(chatModel, maxTurns);
     }
 
     private static void runSingle(TestHarness harness, String useCasePath) throws Exception {
@@ -376,7 +420,13 @@ public class RunAITest {
               jbang RunAITest.java --list                List all available use cases
               jbang RunAITest.java --help                Show this help
 
-            Categories: basic, bug-fix, feature, refactor, intermediate
+            Options:
+              --timeout <seconds>    Set timeout per test (default: 120, advanced: 2400)
+              --max-turns <n>        Set max turns per test (default: 10, advanced: 25)
+
+            Categories: basic, bootstrap, intermediate, advanced, bug-fix
+
+            Note: 'advanced' category auto-configures 40min timeout and 25 max turns
 
             Environment Variables:
               ANTHROPIC_API_KEY    Required for agent execution (set to run agent tests)
@@ -384,8 +434,9 @@ public class RunAITest {
             Examples:
               jbang RunAITest.java use-cases/basic/quit.yaml
               jbang RunAITest.java --category basic
-              jbang RunAITest.java --all
-              jbang RunAITest.java --compare use-cases/bootstrap/01-echo-hello.yaml
+              jbang RunAITest.java --category advanced
+              jbang RunAITest.java --category advanced --timeout 3600
+              jbang RunAITest.java --compare use-cases/advanced/31-config-parser-fix.yaml
             """);
     }
 }
