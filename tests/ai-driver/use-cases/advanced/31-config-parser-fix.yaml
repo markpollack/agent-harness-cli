@@ -283,17 +283,18 @@ setup:
         }
 
 prompt: |
-  The configuration parser has bugs causing it to fail on certain inputs.
+  Fix the bugs in src/ConfigParser.java so that all tests pass.
 
   The workspace contains:
-  - src/ConfigParser.java - Configuration file parser (has bugs)
-  - src/ConfigValue.java - Configuration value holder (complete)
-  - test/ConfigParserTest.java - Tests that should pass
+  - src/ConfigParser.java - Configuration file parser (has bugs marked with BUG comments)
+  - src/ConfigValue.java - Configuration value holder (complete, do not modify)
+  - test/ConfigParserTest.java - Tests that verify the fixes
 
-  Requirements:
-  1. Fix all bugs in ConfigParser.java
-  2. Handle: comments (#), empty lines, key=value, quoted values, whitespace
-  3. All tests must pass: javac src/*.java test/*.java && java -cp .:src:test ConfigParserTest
+  You must:
+  1. Read the files to understand the bugs
+  2. Edit src/ConfigParser.java to fix each bug
+  3. Run the tests to verify: javac src/*.java test/*.java && java -cp .:src:test ConfigParserTest
+  4. Submit when all 10 tests pass
 
 expectedBehavior: |
   Agent should:

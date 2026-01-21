@@ -66,11 +66,12 @@ public class RunAITest {
     private static final Path CLI_JAR = Path.of("../../cli-app/target/cli-app-0.1.0-SNAPSHOT.jar");
     private static final int DEFAULT_MAX_TURNS = 10;
     private static final int DEFAULT_TIMEOUT_SECONDS = 120;
-    private static final int ADVANCED_MAX_TURNS = 25;
+    private static final int ADVANCED_MAX_TURNS = 100;
 
     // Runtime options parsed from command line
     private static int timeoutSeconds = DEFAULT_TIMEOUT_SECONDS;
     private static int maxTurns = DEFAULT_MAX_TURNS;
+    private static boolean useCache = true;
 
     // Cached executor for reuse across tests
     private static CliExecutor cachedExecutor;
@@ -97,6 +98,9 @@ public class RunAITest {
             } else if (arg.equals("--max-turns") && i + 1 < args.length) {
                 maxTurns = Integer.parseInt(args[++i]);
                 System.out.println("Max turns set to: " + maxTurns);
+            } else if (arg.equals("--no-cache")) {
+                useCache = false;
+                System.out.println("Claude Code caching disabled");
             } else if (arg.startsWith("--")) {
                 command = arg;
                 if (i + 1 < args.length && !args[i + 1].startsWith("--")) {
@@ -109,8 +113,11 @@ public class RunAITest {
             i++;
         }
 
-        // Auto-configure for advanced category
-        if ("--category".equals(command) && "advanced".equals(commandArg)) {
+        // Auto-configure for advanced tests (--category advanced, single file, or --compare with advanced/)
+        boolean isAdvanced = ("--category".equals(command) && "advanced".equals(commandArg))
+                || ("single".equals(command) && commandArg != null && commandArg.contains("advanced/"))
+                || ("--compare".equals(command) && commandArg != null && commandArg.contains("advanced/"));
+        if (isAdvanced) {
             if (timeoutSeconds == DEFAULT_TIMEOUT_SECONDS) {
                 timeoutSeconds = 2400; // 40 minutes for advanced
                 System.out.println("Auto-set timeout to 2400s for advanced tests");
@@ -301,7 +308,7 @@ public class RunAITest {
         UseCase useCase = loader.load(yamlPath);
 
         CliExecutor executor = getOrCreateExecutor();
-        ComparisonRunner runner = new ComparisonRunner(config, executor);
+        ComparisonRunner runner = new ComparisonRunner(config, executor).useCache(useCache);
         ComparisonReport report = runner.compare(useCase);
 
         System.out.println(report.format());
@@ -422,11 +429,13 @@ public class RunAITest {
 
             Options:
               --timeout <seconds>    Set timeout per test (default: 120, advanced: 2400)
-              --max-turns <n>        Set max turns per test (default: 10, advanced: 25)
+              --max-turns <n>        Set max turns per test (default: 10, advanced: 100)
+              --no-cache             Disable Claude Code result caching (for --compare)
 
             Categories: basic, bootstrap, intermediate, advanced, bug-fix
 
-            Note: 'advanced' category auto-configures 40min timeout and 25 max turns
+            Note: 'advanced' category auto-configures 40min timeout and 100 max turns
+            Note: --compare caches successful Claude Code runs to speed up MiniAgent iteration
 
             Environment Variables:
               ANTHROPIC_API_KEY    Required for agent execution (set to run agent tests)

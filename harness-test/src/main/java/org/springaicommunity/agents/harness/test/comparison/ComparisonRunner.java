@@ -16,6 +16,8 @@
 
 package org.springaicommunity.agents.harness.test.comparison;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springaicommunity.agents.harness.test.TestHarnessConfig;
@@ -31,6 +33,8 @@ import org.springaicommunity.agents.harness.test.workspace.WorkspaceContext;
 import org.springaicommunity.agents.harness.test.workspace.WorkspaceManager;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 /**
@@ -53,11 +57,15 @@ import java.util.List;
 public class ComparisonRunner {
 
     private static final Logger logger = LoggerFactory.getLogger(ComparisonRunner.class);
+    private static final String CACHE_DIR = ".claude-code-cache";
 
     private final TestHarnessConfig config;
     private final WorkspaceManager workspaceManager;
     private final CliExecutor miniAgentExecutor;
     private final ClaudeCodeExecutor claudeCodeExecutor;
+    private final ObjectMapper objectMapper;
+    private final Path cacheDirectory;
+    private boolean useCache = true;
 
     /**
      * Creates a comparison runner with the given configuration and executor.
@@ -73,10 +81,30 @@ public class ComparisonRunner {
         this.workspaceManager = new WorkspaceManager();
         this.miniAgentExecutor = miniAgentExecutor;
         this.claudeCodeExecutor = new ClaudeCodeExecutor();
+        this.objectMapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+        this.cacheDirectory = Path.of(CACHE_DIR);
+    }
+
+    /**
+     * Enable or disable Claude Code result caching.
+     *
+     * <p>When enabled (default), successful Claude Code results are cached to disk.
+     * On subsequent runs, cached results are used instead of re-running Claude Code.
+     * This speeds up iteration when developing MiniAgent.</p>
+     *
+     * @param useCache true to use caching, false to always run fresh
+     * @return this runner for chaining
+     */
+    public ComparisonRunner useCache(boolean useCache) {
+        this.useCache = useCache;
+        return this;
     }
 
     /**
      * Runs the use case against both agents and generates a comparison report.
+     *
+     * <p>Claude Code runs first to establish a baseline. This helps with debugging
+     * MiniAgent failures - we can compare its behavior against a known-working reference.</p>
      *
      * @param useCase the test case to run
      * @return comparison report with results from both agents
@@ -85,11 +113,13 @@ public class ComparisonRunner {
     public ComparisonReport compare(UseCase useCase) throws IOException {
         logger.info("Starting comparison for: {}", useCase.name());
 
-        // Run MiniAgent first
-        ExecutionSummary miniAgentSummary = runMiniAgent(useCase);
-
-        // Run Claude Code
+        // Run Claude Code first as baseline (helps debug MiniAgent failures)
         ExecutionSummary claudeCodeSummary = runClaudeCode(useCase);
+        logger.info("Claude Code baseline complete: success={}, turns={}, tools={}",
+                claudeCodeSummary.success(), claudeCodeSummary.numTurns(), claudeCodeSummary.toolCalls().size());
+
+        // Run MiniAgent
+        ExecutionSummary miniAgentSummary = runMiniAgent(useCase);
 
         ComparisonReport report = new ComparisonReport(useCase, miniAgentSummary, claudeCodeSummary);
         logger.info("Comparison complete: {}", report.generateInsight());
@@ -142,6 +172,16 @@ public class ComparisonRunner {
     }
 
     private ExecutionSummary runClaudeCode(UseCase useCase) throws IOException {
+        // Check cache first if enabled
+        if (useCache) {
+            ExecutionSummary cached = loadCachedResult(useCase);
+            if (cached != null && cached.success()) {
+                logger.info("Using cached Claude Code result for: {} (success={}, turns={}, tools={})",
+                        useCase.name(), cached.success(), cached.numTurns(), cached.toolCalls().size());
+                return cached;
+            }
+        }
+
         logger.info("Running Claude Code for: {}", useCase.name());
 
         WorkspaceContext workspace = workspaceManager.setup(useCase);
@@ -157,10 +197,128 @@ public class ComparisonRunner {
             claudeCodeExecutor.execute(execConfig);
 
             // ClaudeCodeExecutor captures detailed metrics
-            return claudeCodeExecutor.getLastSummary();
+            ExecutionSummary summary = claudeCodeExecutor.getLastSummary();
+
+            // Cache successful results
+            if (useCache && summary.success()) {
+                saveCachedResult(useCase, summary);
+            }
+
+            return summary;
         }
         finally {
             workspaceManager.cleanup(workspace);
+        }
+    }
+
+    /**
+     * Load cached Claude Code result for a use case.
+     */
+    private ExecutionSummary loadCachedResult(UseCase useCase) {
+        Path cacheFile = getCacheFile(useCase);
+        if (!Files.exists(cacheFile)) {
+            return null;
+        }
+
+        try {
+            CachedSummary cached = objectMapper.readValue(cacheFile.toFile(), CachedSummary.class);
+            logger.debug("Loaded cached result from: {}", cacheFile);
+            return cached.toExecutionSummary();
+        } catch (IOException e) {
+            logger.warn("Failed to load cached result: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Save Claude Code result to cache.
+     */
+    private void saveCachedResult(UseCase useCase, ExecutionSummary summary) {
+        try {
+            Files.createDirectories(cacheDirectory);
+            Path cacheFile = getCacheFile(useCase);
+            CachedSummary cached = CachedSummary.from(summary);
+            objectMapper.writeValue(cacheFile.toFile(), cached);
+            logger.info("Cached Claude Code result to: {}", cacheFile);
+        } catch (IOException e) {
+            logger.warn("Failed to cache result: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Get cache file path for a use case.
+     */
+    private Path getCacheFile(UseCase useCase) {
+        String safeName = useCase.name().replaceAll("[^a-zA-Z0-9-]", "_");
+        return cacheDirectory.resolve(safeName + ".json");
+    }
+
+    /**
+     * Serializable wrapper for ExecutionSummary caching.
+     */
+    public static class CachedSummary {
+        public String agentId;
+        public List<CachedToolCall> toolCalls;
+        public int inputTokens;
+        public int outputTokens;
+        public int thinkingTokens;
+        public int numTurns;
+        public boolean success;
+        public long durationMs;
+
+        public CachedSummary() {} // For Jackson
+
+        public static CachedSummary from(ExecutionSummary summary) {
+            CachedSummary cached = new CachedSummary();
+            cached.agentId = summary.agentId();
+            cached.toolCalls = summary.toolCalls().stream()
+                .map(tc -> CachedToolCall.from(tc))
+                .toList();
+            cached.inputTokens = summary.inputTokens();
+            cached.outputTokens = summary.outputTokens();
+            cached.thinkingTokens = summary.thinkingTokens();
+            cached.numTurns = summary.numTurns();
+            cached.success = summary.success();
+            cached.durationMs = summary.durationMs();
+            return cached;
+        }
+
+        public ExecutionSummary toExecutionSummary() {
+            return ExecutionSummary.builder()
+                .agentId(agentId)
+                .toolCalls(toolCalls.stream().map(CachedToolCall::toToolCallEvent).toList())
+                .inputTokens(inputTokens)
+                .outputTokens(outputTokens)
+                .thinkingTokens(thinkingTokens)
+                .numTurns(numTurns)
+                .success(success)
+                .durationMs(durationMs)
+                .build();
+        }
+    }
+
+    /**
+     * Serializable wrapper for ToolCallEvent.
+     */
+    public static class CachedToolCall {
+        public String toolName;
+        public java.util.Map<String, Object> input;
+        public Object output;
+        public boolean success;
+
+        public CachedToolCall() {} // For Jackson
+
+        public static CachedToolCall from(ToolCallEvent event) {
+            CachedToolCall cached = new CachedToolCall();
+            cached.toolName = event.toolName();
+            cached.input = event.input();
+            cached.output = event.output();
+            cached.success = event.success();
+            return cached;
+        }
+
+        public ToolCallEvent toToolCallEvent() {
+            return new ToolCallEvent(toolName, input, output, success);
         }
     }
 

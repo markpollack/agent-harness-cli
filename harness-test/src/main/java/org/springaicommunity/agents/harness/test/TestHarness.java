@@ -281,6 +281,12 @@ public class TestHarness {
             return null;
         }
 
+        // Handle null or empty output gracefully
+        if (output == null || output.isEmpty()) {
+            logger.warn("No output to save for use case: {}", useCase.name());
+            return null;
+        }
+
         Files.createDirectories(config.transcriptsDir());
 
         String filename = sanitizeFilename(useCase.name()) + ".txt";
